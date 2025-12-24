@@ -1,0 +1,20 @@
+{
+  "name": "propchain-ai-indexer",
+  "version": "1.0.0",
+  "description": "Envio indexer for PropChain AI RWA platform",
+  "main": "src/EventHandlers.ts",
+  "scripts": {
+    "dev": "envio dev",
+    "start": "envio start",
+    "codegen": "envio codegen",
+    "build": "envio build",
+    "test": "envio test"
+  },
+  "dependencies": {
+    "envio": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

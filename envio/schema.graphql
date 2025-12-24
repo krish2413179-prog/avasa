@@ -1,0 +1,204 @@
+# PropChain AI - Hyper-Speed Portfolio Tracking Schema
+# Real-time GraphQL schema for instant portfolio queries
+
+# ========================================
+# RWA PROPERTY ENTITIES
+# ========================================
+
+type PropertyTransaction @entity {
+  id: ID!
+  propertyId: String!
+  propertyName: String!
+  propertyAddress: String!
+  investor: String!
+  shares: BigInt
+  cost: BigInt
+  amount: BigInt
+  action: String! # "purchase", "withdraw", "yield_claim"
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type YieldTransaction @entity {
+  id: ID!
+  propertyId: String!
+  propertyName: String!
+  propertyAddress: String!
+  investor: String!
+  amount: BigInt!
+  action: String! # "yield_claim", "yield_distribution"
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type UserPortfolio @entity {
+  id: ID! # Format: "{user}_{propertyId}"
+  user: String!
+  propertyId: String!
+  totalShares: BigInt!
+  totalInvested: BigInt!
+  totalYieldClaimed: BigInt!
+  lastUpdated: BigInt!
+}
+
+# ========================================
+# DEFI PROTOCOL ENTITIES
+# ========================================
+
+type SwapTransaction @entity {
+  id: ID!
+  sender: String!
+  recipient: String!
+  amount0: BigInt!
+  amount1: BigInt!
+  sqrtPriceX96: BigInt!
+  liquidity: BigInt!
+  tick: Int!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type StreamTransaction @entity {
+  id: ID!
+  token: String!
+  sender: String!
+  receiver: String!
+  flowRate: BigInt!
+  totalSenderFlowRate: BigInt!
+  totalReceiverFlowRate: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type LendingTransaction @entity {
+  id: ID!
+  reserve: String!
+  user: String!
+  onBehalfOf: String
+  repayer: String
+  amount: BigInt!
+  interestRateMode: Int
+  borrowRate: BigInt
+  referralCode: Int
+  useATokens: Boolean
+  action: String! # "supply", "borrow", "repay"
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# ========================================
+# AGGREGATED ANALYTICS ENTITIES
+# ========================================
+
+type UserAnalytics @entity {
+  id: ID! # User address
+  totalPropertiesOwned: Int!
+  totalInvested: BigInt!
+  totalYieldEarned: BigInt!
+  totalSwapVolume: BigInt!
+  totalStreamsSent: BigInt!
+  totalStreamsReceived: BigInt!
+  totalLent: BigInt!
+  totalBorrowed: BigInt!
+  lastActivity: BigInt!
+}
+
+type PropertyAnalytics @entity {
+  id: ID! # Property ID
+  propertyName: String!
+  propertyAddress: String!
+  totalInvestors: Int!
+  totalSharesSold: BigInt!
+  totalValueLocked: BigInt!
+  totalYieldDistributed: BigInt!
+  averageYieldRate: BigInt!
+  lastActivity: BigInt!
+}
+
+type DailyMetrics @entity {
+  id: ID! # Format: "YYYY-MM-DD"
+  date: String!
+  totalTransactions: Int!
+  totalVolume: BigInt!
+  uniqueUsers: Int!
+  newInvestors: Int!
+  totalYieldClaimed: BigInt!
+  totalSwapVolume: BigInt!
+  activeStreams: Int!
+  totalLendingVolume: BigInt!
+}
+
+# ========================================
+# REAL-TIME PORTFOLIO VIEWS
+# ========================================
+
+type LivePortfolio @entity {
+  id: ID! # User address
+  user: String!
+  properties: [UserPortfolio!]!
+  totalValue: BigInt!
+  totalYield: BigInt!
+  portfolioYieldRate: BigInt!
+  diversificationScore: Int!
+  riskScore: Int!
+  lastUpdated: BigInt!
+}
+
+type PropertyPerformance @entity {
+  id: ID! # Property ID
+  propertyId: String!
+  propertyName: String!
+  currentPrice: BigInt!
+  priceChange24h: BigInt!
+  volume24h: BigInt!
+  yieldRate: BigInt!
+  totalInvestors: Int!
+  marketCap: BigInt!
+  lastUpdated: BigInt!
+}
+
+# ========================================
+# AI AGENT OPTIMIZATION ENTITIES
+# ========================================
+
+type UserPreferences @entity {
+  id: ID! # User address
+  user: String!
+  preferredRiskLevel: String! # "conservative", "balanced", "aggressive"
+  preferredPropertyTypes: [String!]!
+  maxInvestmentPerProperty: BigInt!
+  autoReinvestYield: Boolean!
+  notificationSettings: String!
+  lastUpdated: BigInt!
+}
+
+type AIRecommendation @entity {
+  id: ID!
+  user: String!
+  recommendationType: String! # "buy", "sell", "rebalance", "claim_yield"
+  propertyId: String
+  amount: BigInt
+  confidence: Int! # 0-100
+  reasoning: String!
+  expectedReturn: BigInt
+  riskLevel: String!
+  timestamp: BigInt!
+  executed: Boolean!
+}
+
+type MarketTrend @entity {
+  id: ID! # Format: "trend_{timestamp}"
+  trendType: String! # "bullish", "bearish", "sideways"
+  propertyId: String
+  priceDirection: String!
+  volumeChange: BigInt!
+  yieldTrend: String!
+  confidence: Int!
+  timeframe: String! # "1h", "24h", "7d", "30d"
+  timestamp: BigInt!
+}
