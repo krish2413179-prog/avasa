@@ -3,6 +3,23 @@
  * Real-time indexing for all RWA properties + DeFi protocols
  */
 
+// Import generated contract handlers
+const {
+  ManhattanLuxuryApartments,
+  MiamiBeachCondos,
+  AustinTechHubOffice,
+  SeattleWarehouseDistrict,
+  DenverMountainResort,
+  ChicagoDowntownLofts,
+  LosAngelesStudioComplex,
+  PhoenixRetailPlaza,
+  BostonHistoricBrownstones,
+  NashvilleMusicDistrict,
+  // UniswapV3Router,
+  // SuperfluidHost,
+  // AaveV3Pool,
+} = require("../generated");
+
 // ========================================
 // RWA PROPERTY EVENT HANDLERS
 // ========================================
@@ -402,111 +419,111 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 });
 
 // ========================================
-// DEFI PROTOCOL EVENT HANDLERS
+// DEFI PROTOCOL EVENT HANDLERS - TEMPORARILY DISABLED
 // ========================================
 
 // Uniswap V3 Swap Tracking
-UniswapV3Router.Swap.handler(async ({ event, context }) => {
-  const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
-    sender: event.params.sender,
-    recipient: event.params.recipient,
-    amount0: event.params.amount0,
-    amount1: event.params.amount1,
-    sqrtPriceX96: event.params.sqrtPriceX96,
-    liquidity: event.params.liquidity,
-    tick: event.params.tick,
-    timestamp: event.block.timestamp,
-    blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
-  };
+// UniswapV3Router.Swap.handler(async ({ event, context }) => {
+//   const entity = {
+//     id: `${event.transactionHash}_${event.logIndex}`,
+//     sender: event.params.sender,
+//     recipient: event.params.recipient,
+//     amount0: event.params.amount0,
+//     amount1: event.params.amount1,
+//     sqrtPriceX96: event.params.sqrtPriceX96,
+//     liquidity: event.params.liquidity,
+//     tick: event.params.tick,
+//     timestamp: event.block.timestamp,
+//     blockNumber: event.block.number,
+//     transactionHash: event.transactionHash,
+//   };
 
-  context.SwapTransaction.set(entity);
-});
+//   context.SwapTransaction.set(entity);
+// });
 
 // Superfluid Stream Tracking
-SuperfluidHost.FlowUpdated.handler(async ({ event, context }) => {
-  const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
-    token: event.params.token,
-    sender: event.params.sender,
-    receiver: event.params.receiver,
-    flowRate: event.params.flowRate,
-    totalSenderFlowRate: event.params.totalSenderFlowRate,
-    totalReceiverFlowRate: event.params.totalReceiverFlowRate,
-    timestamp: event.block.timestamp,
-    blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
-  };
+// SuperfluidHost.FlowUpdated.handler(async ({ event, context }) => {
+//   const entity = {
+//     id: `${event.transactionHash}_${event.logIndex}`,
+//     token: event.params.token,
+//     sender: event.params.sender,
+//     receiver: event.params.receiver,
+//     flowRate: event.params.flowRate,
+//     totalSenderFlowRate: event.params.totalSenderFlowRate,
+//     totalReceiverFlowRate: event.params.totalReceiverFlowRate,
+//     timestamp: event.block.timestamp,
+//     blockNumber: event.block.number,
+//     transactionHash: event.transactionHash,
+//   };
 
-  context.StreamTransaction.set(entity);
-});
+//   context.StreamTransaction.set(entity);
+// });
 
 // Aave V3 Supply Tracking
-AaveV3Pool.Supply.handler(async ({ event, context }) => {
-  const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
-    reserve: event.params.reserve,
-    user: event.params.user,
-    onBehalfOf: event.params.onBehalfOf,
-    repayer: "",
-    amount: event.params.amount,
-    interestRateMode: 0,
-    borrowRate: BigInt(0),
-    referralCode: event.params.referralCode,
-    useATokens: false,
-    action: "supply",
-    timestamp: event.block.timestamp,
-    blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
-  };
+// AaveV3Pool.Supply.handler(async ({ event, context }) => {
+//   const entity = {
+//     id: `${event.transactionHash}_${event.logIndex}`,
+//     reserve: event.params.reserve,
+//     user: event.params.user,
+//     onBehalfOf: event.params.onBehalfOf,
+//     repayer: "",
+//     amount: event.params.amount,
+//     interestRateMode: 0,
+//     borrowRate: BigInt(0),
+//     referralCode: event.params.referralCode,
+//     useATokens: false,
+//     action: "supply",
+//     timestamp: event.block.timestamp,
+//     blockNumber: event.block.number,
+//     transactionHash: event.transactionHash,
+//   };
 
-  context.LendingTransaction.set(entity);
-});
+//   context.LendingTransaction.set(entity);
+// });
 
 // Aave V3 Borrow Tracking
-AaveV3Pool.Borrow.handler(async ({ event, context }) => {
-  const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
-    reserve: event.params.reserve,
-    user: event.params.user,
-    onBehalfOf: event.params.onBehalfOf,
-    repayer: "",
-    amount: event.params.amount,
-    interestRateMode: event.params.interestRateMode,
-    borrowRate: event.params.borrowRate,
-    referralCode: event.params.referralCode,
-    useATokens: false,
-    action: "borrow",
-    timestamp: event.block.timestamp,
-    blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
-  };
+// AaveV3Pool.Borrow.handler(async ({ event, context }) => {
+//   const entity = {
+//     id: `${event.transactionHash}_${event.logIndex}`,
+//     reserve: event.params.reserve,
+//     user: event.params.user,
+//     onBehalfOf: event.params.onBehalfOf,
+//     repayer: "",
+//     amount: event.params.amount,
+//     interestRateMode: event.params.interestRateMode,
+//     borrowRate: event.params.borrowRate,
+//     referralCode: event.params.referralCode,
+//     useATokens: false,
+//     action: "borrow",
+//     timestamp: event.block.timestamp,
+//     blockNumber: event.block.number,
+//     transactionHash: event.transactionHash,
+//   };
 
-  context.LendingTransaction.set(entity);
-});
+//   context.LendingTransaction.set(entity);
+// });
 
 // Aave V3 Repay Tracking
-AaveV3Pool.Repay.handler(async ({ event, context }) => {
-  const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
-    reserve: event.params.reserve,
-    user: event.params.user,
-    onBehalfOf: "",
-    repayer: event.params.repayer,
-    amount: event.params.amount,
-    interestRateMode: 0,
-    borrowRate: BigInt(0),
-    referralCode: 0,
-    useATokens: event.params.useATokens,
-    action: "repay",
-    timestamp: event.block.timestamp,
-    blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
-  };
+// AaveV3Pool.Repay.handler(async ({ event, context }) => {
+//   const entity = {
+//     id: `${event.transactionHash}_${event.logIndex}`,
+//     reserve: event.params.reserve,
+//     user: event.params.user,
+//     onBehalfOf: "",
+//     repayer: event.params.repayer,
+//     amount: event.params.amount,
+//     interestRateMode: 0,
+//     borrowRate: BigInt(0),
+//     referralCode: 0,
+//     useATokens: event.params.useATokens,
+//     action: "repay",
+//     timestamp: event.block.timestamp,
+//     blockNumber: event.block.number,
+//     transactionHash: event.transactionHash,
+//   };
 
-  context.LendingTransaction.set(entity);
-});
+//   context.LendingTransaction.set(entity);
+// });
 
 // ========================================
 // TRANSFER EVENT HANDLERS FOR ALL PROPERTIES
@@ -1064,7 +1081,7 @@ NashvilleMusicDistrict.PropertyUpdated.handler(async ({ event, context }) => {
 // HELPER FUNCTIONS
 // ========================================
 
-async function updateUserPortfolio(context: any, investor: string, propertyId: string, shares: bigint, cost: bigint, action: string) {
+async function updateUserPortfolio(context, investor, propertyId, shares, cost, action) {
   const portfolioId = `${investor}_${propertyId}`;
   
   // Get existing portfolio or create new one
@@ -1093,7 +1110,7 @@ async function updateUserPortfolio(context: any, investor: string, propertyId: s
   context.UserPortfolio.set(portfolio);
 }
 
-async function updateUserYieldStats(context: any, investor: string, propertyId: string, amount: bigint) {
+async function updateUserYieldStats(context, investor, propertyId, amount) {
   const portfolioId = `${investor}_${propertyId}`;
   
   let portfolio = await context.UserPortfolio.get(portfolioId);

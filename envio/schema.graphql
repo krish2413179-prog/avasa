@@ -163,7 +163,6 @@ type DailyMetrics @entity {
 type LivePortfolio @entity {
   id: ID! # User address
   user: String!
-  properties: [UserPortfolio!]!
   totalValue: BigInt!
   totalYield: BigInt!
   portfolioYieldRate: BigInt!
@@ -193,7 +192,7 @@ type UserPreferences @entity {
   id: ID! # User address
   user: String!
   preferredRiskLevel: String! # "conservative", "balanced", "aggressive"
-  preferredPropertyTypes: [String!]!
+  preferredPropertyTypesJson: String! # JSON string of array
   maxInvestmentPerProperty: BigInt!
   autoReinvestYield: Boolean!
   notificationSettings: String!

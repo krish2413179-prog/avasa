@@ -106,39 +106,37 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
-      # Uniswap V3 Router for DeFi tracking
-      - name: UniswapV3Router
-        address: "0x2626664c2603336E57B271c5C0b26F421741e481" # Base Sepolia
-        handler: src/EventHandlers.js
-        events:
-          - event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
+      # Uniswap V3 Router for DeFi tracking - TEMPORARILY DISABLED
+      # - name: UniswapV3Router
+      #   address: "0x2626664c2603336E57B271c5C0b26F421741e481" # Base Sepolia
+      #   handler: src/EventHandlers.js
+      #   events:
+      #     - event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
           
-      # Superfluid Host for streaming tracking
-      - name: SuperfluidHost
-        address: "0x4C073B3baB6d88B6575C8743282064147A6A6903"
-        handler: src/EventHandlers.js
-        events:
-          - event: FlowUpdated(address indexed token, address indexed sender, address indexed receiver, int96 flowRate, int256 totalSenderFlowRate, int256 totalReceiverFlowRate, bytes userData)
+      # Superfluid Host for streaming tracking - TEMPORARILY DISABLED
+      # - name: SuperfluidHost
+      #   address: "0x4C073B3baB6d88B6575C8743282064147A6A6903"
+      #   handler: src/EventHandlers.js
+      #   events:
+      #     - event: FlowUpdated(address indexed token, address indexed sender, address indexed receiver, int96 flowRate, int256 totalSenderFlowRate, int256 totalReceiverFlowRate, bytes userData)
           
-      # Aave V3 Pool for lending tracking
-      - name: AaveV3Pool
-        address: "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b" # Base Sepolia Pool
-        handler: src/EventHandlers.js
-        events:
-          - event: Supply(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
-          - event: Borrow(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint8 interestRateMode, uint256 borrowRate, uint16 indexed referralCode)
-          - event: Repay(address indexed reserve, address indexed user, address indexed repayer, uint256 amount, bool useATokens)
+      # Aave V3 Pool for lending tracking - TEMPORARILY DISABLED
+      # - name: AaveV3Pool
+      #   address: "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b" # Base Sepolia Pool
+      #   handler: src/EventHandlers.js
+      #   events:
+      #     - event: Supply(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
+      #     - event: Borrow(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint8 interestRateMode, uint256 borrowRate, uint16 indexed referralCode)
+      #     - event: Repay(address indexed reserve, address indexed user, address indexed repayer, uint256 amount, bool useATokens)
 
 field_selection:
   transaction_fields:
     - "hash"
-    - "block_number" 
-    - "timestamp"
     - "from"
     - "to"
     - "value"
-    - "gas_used"
-    - "gas_price"
+    - "gasUsed"
+    - "gasPrice"
 
 rollback_on_reorg: true
 save_full_history: true
