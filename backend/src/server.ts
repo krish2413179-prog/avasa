@@ -7,6 +7,7 @@ import { executeOrder } from './executor/agentKit'
 import { parseUserIntent } from './ai/parser'
 import portfolioRoutes from './routes/portfolio'
 import permissionsRoutes from './routes/permissions'
+import enhancedPropertiesRoutes from './routes/enhancedProperties'
 import { tradingMonitor } from './services/tradingMonitor'
 
 // Load environment variables
@@ -29,6 +30,7 @@ tradingMonitor.start()
 // Routes
 app.use('/api/portfolio', portfolioRoutes)
 app.use('/api/permissions', permissionsRoutes)
+app.use('/api/enhanced-properties', enhancedPropertiesRoutes)
 
 // Health check
 app.get('/health', (req, res) => {

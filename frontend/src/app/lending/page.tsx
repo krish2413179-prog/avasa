@@ -1,484 +1,406 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Layout } from '@/components/Layout'
-import { useAccount } from 'wagmi'
-
-interface LendingPosition {
-  id: string
-  asset: string
-  amount: string
-  collateral: string
-  collateralAmount: string
-  interestRate: string
-  healthFactor: string
-  liquidationPrice: string
-  status: 'active' | 'repaid'
-}
-
-interface AvailableAsset {
-  symbol: string
-  name: string
-  icon: string
-  borrowRate: string
-  availableLiquidity: string
-  ltv: string
-}
+import { 
+  Wallet, 
+  ArrowRight, 
+  TrendingUp, 
+  ShieldCheck, 
+  Zap,
+  Activity,
+  History,
+  Info,
+  DollarSign,
+  ChevronRight,
+  Plus,
+  Brain
+} from 'lucide-react';
+import Link from 'next/link';
 
 export default function LendingPage() {
-  const { isConnected, address } = useAccount()
-  const [activeTab, setActiveTab] = useState<'borrow' | 'positions'>('borrow')
-  const [positions, setPositions] = useState<LendingPosition[]>([])
-  const [availableAssets] = useState<AvailableAsset[]>([
-    {
-      symbol: 'USDC',
-      name: 'USD Coin',
-      icon: '💵',
-      borrowRate: '3.2%',
-      availableLiquidity: '1.2M',
-      ltv: '80%'
-    },
-    {
-      symbol: 'WETH',
-      name: 'Wrapped Ethereum',
-      icon: '🔷',
-      borrowRate: '2.8%',
-      availableLiquidity: '450',
-      ltv: '75%'
-    },
-    {
-      symbol: 'WBTC',
-      name: 'Wrapped Bitcoin',
-      icon: '₿',
-      borrowRate: '4.1%',
-      availableLiquidity: '12.5',
-      ltv: '70%'
-    }
-  ])
-  
-  const [borrowForm, setBorrowForm] = useState({
-    asset: 'USDC',
-    amount: '',
-    collateral: 'WETH',
-    collateralAmount: ''
-  })
-  const [loading, setLoading] = useState(false)
-
-  // Mock positions data
-  useEffect(() => {
-    setPositions([
-      {
-        id: '1',
-        asset: 'USDC',
-        amount: '500',
-        collateral: 'WETH',
-        collateralAmount: '0.5',
-        interestRate: '3.2%',
-        healthFactor: '2.1',
-        liquidationPrice: '$1,800',
-        status: 'active'
-      },
-      {
-        id: '2',
-        asset: 'WETH',
-        amount: '0.2',
-        collateral: 'WBTC',
-        collateralAmount: '0.01',
-        interestRate: '2.8%',
-        healthFactor: '1.8',
-        liquidationPrice: '$38,000',
-        status: 'active'
-      }
-    ])
-  }, [])
-
-  const handleBorrow = async () => {
-    if (!isConnected) return
-    
-    setLoading(true)
-    
-    try {
-      // Simulate API call to Aave
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Add new position
-      const newPosition: LendingPosition = {
-        id: Date.now().toString(),
-        asset: borrowForm.asset,
-        amount: borrowForm.amount,
-        collateral: borrowForm.collateral,
-        collateralAmount: borrowForm.collateralAmount,
-        interestRate: availableAssets.find(a => a.symbol === borrowForm.asset)?.borrowRate || '3.0%',
-        healthFactor: '2.5',
-        liquidationPrice: borrowForm.collateral === 'WETH' ? '$1,600' : '$35,000',
-        status: 'active'
-      }
-      
-      setPositions(prev => [...prev, newPosition])
-      setBorrowForm({ asset: 'USDC', amount: '', collateral: 'WETH', collateralAmount: '' })
-      setActiveTab('positions')
-      
-      alert(`Successfully borrowed ${borrowForm.amount} ${borrowForm.asset}`)
-    } catch (error) {
-      alert('Failed to borrow. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleRepay = async (positionId: string) => {
-    setLoading(true)
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      setPositions(prev => prev.map(pos => 
-        pos.id === positionId ? { ...pos, status: 'repaid' as const } : pos
-      ))
-      
-      alert('Successfully repaid loan')
-    } catch (error) {
-      alert('Failed to repay. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (!isConnected) {
-    return (
-      <Layout>
-        <div className="p-8">
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">🏦 Aave V3 Lending</h1>
-            <p className="text-gray-600 mb-8">Connect your wallet to borrow against your assets</p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-yellow-800">Please connect your MetaMask wallet to continue</p>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
   return (
-    <Layout>
-      <div className="p-8">
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'auto'
+    }}>
+      {/* Navigation */}
+      <nav style={{ 
+        background: 'rgba(255, 255, 255, 0.95)', 
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        padding: '1rem 0'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              }}>
+                <Brain style={{ width: '20px', height: '20px', color: 'white' }} />
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>PropChain AI</h1>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Lending</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <div style={{ 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        padding: '2rem 1rem',
+        minHeight: 'calc(100vh - 80px)'
+      }}>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">🏦 Aave V3 Lending</h1>
-          <p className="text-gray-600">Borrow assets against your collateral with competitive rates</p>
-        </div>
-
-        {/* Protocol Info */}
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-blue-800">Aave V3 on Base Sepolia</h3>
-              <p className="text-sm text-blue-700">Pool Addresses Provider: 0x012bAC54348C0E635dCAc9D5FB99f06F24136C9A</p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-blue-700">Total Value Locked</div>
-              <div className="font-semibold text-blue-800">$2.4M</div>
-            </div>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1rem',
+          marginBottom: '2rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 style={{ 
+              fontSize: '3rem', 
+              fontWeight: 'bold', 
+              color: 'white', 
+              margin: 0,
+              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              Lending
+            </h1>
+            <span style={{
+              padding: '0.25rem 0.5rem',
+              borderRadius: '6px',
+              background: 'rgba(147, 51, 234, 0.1)',
+              color: '#9333ea',
+              fontSize: '0.625rem',
+              fontWeight: 'bold',
+              border: '1px solid rgba(147, 51, 234, 0.2)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              Powered by Aave V3
+            </span>
+          </div>
+          <p style={{ fontSize: '1.125rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0 }}>
+            Borrow against your RWA shares or earn interest on stables
+          </p>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button style={{
+              padding: '0.5rem 1rem',
+              background: '#18181b',
+              border: '1px solid #27272a',
+              borderRadius: '12px',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              color: 'white',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#27272a'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#18181b'}>
+              Supply Assets
+            </button>
+            <button style={{
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+              color: 'white',
+              borderRadius: '12px',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 8px 32px rgba(59, 130, 246, 0.2)',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 12px 40px rgba(59, 130, 246, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 32px rgba(59, 130, 246, 0.2)';
+            }}>
+              Borrow Now
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('borrow')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'borrow'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                💰 Borrow Assets
-              </button>
-              <button
-                onClick={() => setActiveTab('positions')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'positions'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                📊 My Positions ({positions.filter(p => p.status === 'active').length})
-              </button>
-            </nav>
-          </div>
+        {/* Stats Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          {[
+            { label: 'Total Supplied', value: '$45,200', color: 'white' },
+            { label: 'Total Borrowed', value: '$12,400', color: '#9ca3af' },
+            { label: 'Net APY', value: '+4.2%', color: '#10b981' },
+            { label: 'Health Factor', value: '2.45', color: '#10b981' },
+          ].map((stat, i) => (
+            <div 
+              key={stat.label}
+              style={{
+                padding: '1.5rem',
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}
+            >
+              <div style={{ 
+                fontSize: '0.625rem', 
+                fontWeight: 'bold', 
+                color: '#6b7280', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.05em', 
+                marginBottom: '0.5rem' 
+              }}>
+                {stat.label}
+              </div>
+              <div style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: 'bold', 
+                color: stat.color === 'white' ? '#1f2937' : stat.color 
+              }}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Borrow Tab */}
-        {activeTab === 'borrow' && (
-          <div className="space-y-6">
-            {/* Available Assets */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Available Assets to Borrow</h2>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Asset
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Borrow Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Available Liquidity
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Max LTV
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {availableAssets.map((asset) => (
-                      <tr key={asset.symbol} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <span className="text-2xl mr-3">{asset.icon}</span>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{asset.symbol}</div>
-                              <div className="text-sm text-gray-500">{asset.name}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                            {asset.borrowRate}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {asset.availableLiquidity} {asset.symbol}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {asset.ltv}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* Main Content Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '2fr 1fr', 
+          gap: '2rem'
+        }}>
+          {/* Assets to Supply */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: 'bold', 
+                color: 'white', 
+                margin: 0,
+                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+              }}>
+                Assets to Supply
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {[
+                  { name: 'USDC Stables', balance: '5,000', apy: '4.2%', status: 'Active' },
+                  { name: 'Wrapped ETH', balance: '2.45', apy: '1.8%', status: 'N/A' },
+                  { name: 'RWA Shares (Index)', balance: '124', apy: '6.1%', status: 'Active' },
+                ].map((asset, i) => (
+                  <div key={i} style={{
+                    padding: '1rem',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '12px',
+                        background: '#18181b',
+                        border: '1px solid #27272a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#9ca3af'
+                      }}>
+                        <DollarSign style={{ width: '20px', height: '20px' }} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>{asset.name}</h4>
+                        <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Balance: {asset.balance}</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#10b981' }}>{asset.apy} APY</div>
+                        <div style={{ 
+                          fontSize: '0.625rem', 
+                          color: '#6b7280', 
+                          fontWeight: 'bold', 
+                          textTransform: 'uppercase', 
+                          letterSpacing: '0.1em' 
+                        }}>
+                          Supply Yield
+                        </div>
+                      </div>
+                      <button style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '12px',
+                        background: '#18181b',
+                        border: '1px solid #27272a',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#27272a'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#18181b'}>
+                        Supply
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Borrow Form */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Create Borrow Position</h3>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Asset to Borrow
-                  </label>
-                  <select
-                    value={borrowForm.asset}
-                    onChange={(e) => setBorrowForm(prev => ({ ...prev, asset: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {availableAssets.map(asset => (
-                      <option key={asset.symbol} value={asset.symbol}>
-                        {asset.icon} {asset.symbol} - {asset.borrowRate}
-                      </option>
-                    ))}
-                  </select>
+            {/* Your Borrowings */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: 'bold', 
+                color: 'white', 
+                margin: 0,
+                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+              }}>
+                Your Borrowings
+              </h3>
+              <div style={{
+                padding: '2rem',
+                borderRadius: '20px',
+                border: '2px dashed #27272a',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                gap: '0.75rem',
+                background: 'rgba(255, 255, 255, 0.05)'
+              }}>
+                <div style={{
+                  padding: '0.75rem',
+                  borderRadius: '50%',
+                  background: '#18181b',
+                  color: '#3f3f46'
+                }}>
+                  <Wallet style={{ width: '24px', height: '24px' }} />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount to Borrow
-                  </label>
-                  <input
-                    type="number"
-                    value={borrowForm.amount}
-                    onChange={(e) => setBorrowForm(prev => ({ ...prev, amount: e.target.value }))}
-                    placeholder="0.0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#9ca3af', margin: 0 }}>No active loans</p>
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Supply collateral to start borrowing against your assets.</p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Collateral Asset
-                  </label>
-                  <select
-                    value={borrowForm.collateral}
-                    onChange={(e) => setBorrowForm(prev => ({ ...prev, collateral: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="WETH">🔷 WETH - 75% LTV</option>
-                    <option value="WBTC">₿ WBTC - 70% LTV</option>
-                    <option value="USDC">💵 USDC - 80% LTV</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Collateral Amount
-                  </label>
-                  <input
-                    type="number"
-                    value={borrowForm.collateralAmount}
-                    onChange={(e) => setBorrowForm(prev => ({ ...prev, collateralAmount: e.target.value }))}
-                    placeholder="0.0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <button
-                  onClick={handleBorrow}
-                  disabled={loading || !borrowForm.amount || !borrowForm.collateralAmount}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {loading ? 'Creating Position...' : 'Borrow Assets'}
-                </button>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Positions Tab */}
-        {activeTab === 'positions' && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Your Lending Positions</h2>
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{
+              padding: '1.5rem',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>Risk Management</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{
+                  padding: '1rem',
+                  borderRadius: '16px',
+                  background: '#18181b',
+                  border: '1px solid #27272a',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#6b7280' }}>Health Factor</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#10b981' }}>2.45</span>
+                  </div>
+                  <div style={{
+                    height: '6px',
+                    width: '100%',
+                    background: '#27272a',
+                    borderRadius: '9999px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      background: '#10b981',
+                      width: '80%'
+                    }} />
+                  </div>
+                  <p style={{ 
+                    fontSize: '0.625rem', 
+                    color: '#6b7280', 
+                    lineHeight: '1.5', 
+                    textAlign: 'center',
+                    margin: 0 
+                  }}>
+                    Your liquidation threshold is far below current collateral levels.
+                  </p>
+                </div>
+              </div>
             </div>
-            
-            {positions.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-500">No lending positions found</p>
-                <button
-                  onClick={() => setActiveTab('borrow')}
-                  className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Create your first position →
-                </button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Borrowed Asset
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Collateral
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Interest Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Health Factor
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Liquidation Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {positions.map((position) => (
-                      <tr key={position.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {position.amount} {position.asset}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {position.collateralAmount} {position.collateral}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {position.interestRate}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            parseFloat(position.healthFactor) > 2 
-                              ? 'bg-green-100 text-green-800'
-                              : parseFloat(position.healthFactor) > 1.5
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {position.healthFactor}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {position.liquidationPrice}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            position.status === 'active' 
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {position.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {position.status === 'active' ? (
-                            <button
-                              onClick={() => handleRepay(position.id)}
-                              disabled={loading}
-                              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Repay
-                            </button>
-                          ) : (
-                            <span className="text-gray-400">Repaid</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* Risk Warning */}
-        <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-red-800 mb-4">⚠️ Risk Warning</h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-red-800 mb-2">Liquidation Risk</h4>
-              <ul className="text-sm text-red-700 space-y-1">
-                <li>• Monitor your health factor closely</li>
-                <li>• Health factor below 1.0 triggers liquidation</li>
-                <li>• Volatile assets increase liquidation risk</li>
-                <li>• Consider adding more collateral if needed</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-red-800 mb-2">Interest Rates</h4>
-              <ul className="text-sm text-red-700 space-y-1">
-                <li>• Variable rates change based on utilization</li>
-                <li>• Interest accrues continuously</li>
-                <li>• Repay early to minimize interest costs</li>
-                <li>• Monitor rate changes regularly</li>
-              </ul>
+            <div style={{
+              padding: '1.5rem',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#3b82f6' }}>
+                <ShieldCheck style={{ width: '20px', height: '20px' }} />
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>Aave Protocol V3</h3>
+              </div>
+              <p style={{ 
+                fontSize: '0.75rem', 
+                color: '#6b7280', 
+                lineHeight: '1.5', 
+                margin: 0 
+              }}>
+                Avasa integrates with Aave V3 on Base Sepolia. Your RWA shares act as collateral 
+                for capital-efficient borrowing without liquidating your real estate positions.
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </Layout>
-  )
+    </div>
+  );
 }

@@ -1,627 +1,431 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Layout } from '@/components/Layout'
-import { useAccount } from 'wagmi'
+import { 
+  Users, 
+  Search, 
+  TrendingUp, 
+  ArrowUpRight, 
+  Activity, 
+  ShieldCheck, 
+  Zap,
+  ArrowRight,
+  Filter,
+  Star,
+  Copy,
+  Brain
+} from 'lucide-react';
+import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
-interface WhaleTrader {
-  id: string
-  address: string
-  name: string
-  avatar: string
-  totalValue: string
-  winRate: number
-  followers: number
-  avgReturn: string
-  recentTrades: number
-  status: 'following' | 'not-following'
-}
-
-interface CopyTrade {
-  id: string
-  whaleAddress: string
-  whaleName: string
-  fromToken: string
-  toToken: string
-  amount: string
-  timestamp: string
-  status: 'pending' | 'executed' | 'failed'
-  myAmount: string
-}
-
-interface CopySettings {
-  whaleAddress: string
-  copyPercentage: number
-  maxAmountPerTrade: string
-  minAmountPerTrade: string
-  enabled: boolean
-}
+const traders = [
+  { 
+    name: 'nancy.base.eth', 
+    roi: '+142.5%', 
+    winRate: '84%', 
+    followers: '1.2k',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&auto=format&fit=crop',
+    assets: ['RWA', 'ETH', 'USDC'],
+    description: 'Specializing in high-yield RWA properties and momentum ETH trades.'
+  },
+  { 
+    name: 'alpha_whale.base.eth', 
+    roi: '+98.2%', 
+    winRate: '72%', 
+    followers: '850',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop',
+    assets: ['ETH', 'Lending', 'BTC'],
+    description: 'Conservative growth strategy with focus on Aave lending yields.'
+  },
+  { 
+    name: 'rwa_master.base.eth', 
+    roi: '+64.1%', 
+    winRate: '92%', 
+    followers: '2.4k',
+    avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=150&auto=format&fit=crop',
+    assets: ['RWA', 'USDC'],
+    description: 'Maximum stability through diversified real estate share ownership.'
+  },
+];
 
 export default function CopyTradingPage() {
-  const { isConnected, address } = useAccount()
-  const [activeTab, setActiveTab] = useState<'whales' | 'following' | 'trades' | 'settings'>('whales')
-  const [whales, setWhales] = useState<WhaleTrader[]>([])
-  const [copyTrades, setCopyTrades] = useState<CopyTrade[]>([])
-  const [copySettings, setCopySettings] = useState<CopySettings[]>([])
-  const [loading, setLoading] = useState(false)
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      height: '100%',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'auto'
+    }}>
+      {/* Navigation */}
+      <nav style={{ 
+        background: 'rgba(255, 255, 255, 0.95)', 
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        padding: '1rem 0'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Logo */}
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              }}>
+                <Brain style={{ width: '20px', height: '20px', color: 'white' }} />
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>PropChain AI</h1>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Copy Trading</p>
+              </div>
+            </Link>
 
-  // Mock data
-  useEffect(() => {
-    setWhales([
-      {
-        id: '1',
-        address: '0x1234...5678',
-        name: 'nancy.base.eth',
-        avatar: '👩‍💼',
-        totalValue: '$2.4M',
-        winRate: 78,
-        followers: 1250,
-        avgReturn: '+24.5%',
-        recentTrades: 15,
-        status: 'following'
-      },
-      {
-        id: '2',
-        address: '0x2345...6789',
-        name: 'defi-whale.base.eth',
-        avatar: '🐋',
-        totalValue: '$5.8M',
-        winRate: 85,
-        followers: 2100,
-        avgReturn: '+31.2%',
-        recentTrades: 8,
-        status: 'not-following'
-      },
-      {
-        id: '3',
-        address: '0x3456...7890',
-        name: 'crypto-alpha.base.eth',
-        avatar: '🚀',
-        totalValue: '$1.9M',
-        winRate: 72,
-        followers: 890,
-        avgReturn: '+18.7%',
-        recentTrades: 22,
-        status: 'not-following'
-      }
-    ])
-
-    setCopyTrades([
-      {
-        id: '1',
-        whaleAddress: '0x1234...5678',
-        whaleName: 'nancy.base.eth',
-        fromToken: 'USDC',
-        toToken: 'ETH',
-        amount: '1000',
-        timestamp: '2024-12-24 10:30',
-        status: 'executed',
-        myAmount: '50'
-      },
-      {
-        id: '2',
-        whaleAddress: '0x1234...5678',
-        whaleName: 'nancy.base.eth',
-        fromToken: 'ETH',
-        toToken: 'WBTC',
-        amount: '2.5',
-        timestamp: '2024-12-24 09:15',
-        status: 'pending',
-        myAmount: '0.125'
-      }
-    ])
-
-    setCopySettings([
-      {
-        whaleAddress: '0x1234...5678',
-        copyPercentage: 5,
-        maxAmountPerTrade: '100',
-        minAmountPerTrade: '10',
-        enabled: true
-      }
-    ])
-  }, [])
-
-  const handleFollowWhale = async (whaleId: string) => {
-    setLoading(true)
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      setWhales(prev => prev.map(whale => 
-        whale.id === whaleId 
-          ? { ...whale, status: 'following', followers: whale.followers + 1 }
-          : whale
-      ))
-      
-      // Add default copy settings
-      const whale = whales.find(w => w.id === whaleId)
-      if (whale) {
-        setCopySettings(prev => [...prev, {
-          whaleAddress: whale.address,
-          copyPercentage: 5,
-          maxAmountPerTrade: '100',
-          minAmountPerTrade: '10',
-          enabled: true
-        }])
-      }
-      
-      alert('Successfully started following whale trader!')
-    } catch (error) {
-      alert('Failed to follow whale trader.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleUnfollowWhale = async (whaleId: string) => {
-    setLoading(true)
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setWhales(prev => prev.map(whale => 
-        whale.id === whaleId 
-          ? { ...whale, status: 'not-following', followers: whale.followers - 1 }
-          : whale
-      ))
-      
-      // Remove copy settings
-      const whale = whales.find(w => w.id === whaleId)
-      if (whale) {
-        setCopySettings(prev => prev.filter(setting => setting.whaleAddress !== whale.address))
-      }
-      
-      alert('Stopped following whale trader.')
-    } catch (error) {
-      alert('Failed to unfollow whale trader.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleUpdateSettings = async (whaleAddress: string, newSettings: Partial<CopySettings>) => {
-    setCopySettings(prev => prev.map(setting => 
-      setting.whaleAddress === whaleAddress 
-        ? { ...setting, ...newSettings }
-        : setting
-    ))
-  }
-
-  const followingWhales = whales.filter(whale => whale.status === 'following')
-  const totalCopyTrades = copyTrades.length
-  const successfulTrades = copyTrades.filter(trade => trade.status === 'executed').length
-
-  if (!isConnected) {
-    return (
-      <Layout>
-        <div className="p-8">
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">👥 Copy Trading</h1>
-            <p className="text-gray-600 mb-8">Connect your wallet to follow whale traders automatically</p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-yellow-800">Please connect your MetaMask wallet to continue</p>
+            {/* Navigation Links */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {[
+                  { name: 'Dashboard', href: '/' },
+                  { name: 'Auto-Rebalance', href: '/rebalance' },
+                  { name: 'Copy Trading', href: '/copy-trading' },
+                  { name: 'Limit Orders', href: '/limit-orders' },
+                ].map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      color: item.href === '/copy-trading' ? '#3b82f6' : '#374151',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      background: item.href === '/copy-trading' ? '#eff6ff' : 'transparent',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+              <ConnectButton />
             </div>
           </div>
         </div>
-      </Layout>
-    )
-  }
+      </nav>
 
-  return (
-    <Layout>
-      <div className="p-8">
+      {/* Main Content */}
+      <div style={{ 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        padding: '2rem 1rem',
+        minHeight: 'calc(100vh - 80px)',
+        width: '100%'
+      }}>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">👥 Copy Trading</h1>
-          <p className="text-gray-600">Follow whale trades automatically with Envio real-time monitoring</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+          <div>
+            <h1 style={{ 
+              fontSize: '3rem', 
+              fontWeight: 'bold', 
+              color: 'white', 
+              marginBottom: '0.5rem',
+              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              Copy Trading
+            </h1>
+            <p style={{ fontSize: '1.125rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+              Mirror the strategies of top-performing on-chain investors
+            </p>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ position: 'relative' }}>
+              <Search style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                width: '16px', 
+                height: '16px', 
+                color: '#6b7280' 
+              }} />
+              <input 
+                type="text" 
+                placeholder="Search traders..."
+                style={{
+                  paddingLeft: '40px',
+                  paddingRight: '16px',
+                  paddingTop: '8px',
+                  paddingBottom: '8px',
+                  width: '256px',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+            <button style={{
+              padding: '8px',
+              background: 'rgba(255, 255, 255, 0.9)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              color: '#6b7280'
+            }}>
+              <Filter style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-blue-500">
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Following</h3>
-            <p className="text-2xl font-bold text-blue-600">{followingWhales.length}</p>
-            <p className="text-sm text-gray-500">Whale traders</p>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-green-500">
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Copy Trades</h3>
-            <p className="text-2xl font-bold text-green-600">{totalCopyTrades}</p>
-            <p className="text-sm text-gray-500">Total executed</p>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-purple-500">
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Success Rate</h3>
-            <p className="text-2xl font-bold text-purple-600">
-              {totalCopyTrades > 0 ? Math.round((successfulTrades / totalCopyTrades) * 100) : 0}%
-            </p>
-            <p className="text-sm text-gray-500">Successful trades</p>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-orange-500">
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Avg Return</h3>
-            <p className="text-2xl font-bold text-orange-600">+12.3%</p>
-            <p className="text-sm text-gray-500">This month</p>
-          </div>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          {[
+            { label: 'Total Copied Value', value: '$45,200.00', icon: Users },
+            { label: 'Avg. ROI', value: '+24.5%', icon: TrendingUp },
+            { label: 'Active Copying', value: '3', icon: Activity },
+            { label: 'PropChain Rank', value: '#124', icon: Star },
+          ].map((stat, i) => (
+            <div 
+              key={stat.label}
+              style={{
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                transition: 'transform 0.2s',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              <div style={{
+                padding: '8px',
+                width: 'fit-content',
+                borderRadius: '8px',
+                background: '#f8fafc',
+                color: '#6b7280',
+                marginBottom: '12px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <stat.icon style={{ width: '16px', height: '16px' }} />
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '4px' }}>{stat.value}</div>
+              <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.1em' }}>{stat.label}</div>
+            </div>
+          ))}
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('whales')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'whales'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                🐋 Discover Whales
-              </button>
-              <button
-                onClick={() => setActiveTab('following')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'following'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                👥 Following ({followingWhales.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('trades')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'trades'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                📊 Copy Trades
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'settings'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                ⚙️ Settings
-              </button>
-            </nav>
+        {/* Top Traders Section */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: 0 }}>Top Traders</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', fontWeight: '500' }}>Sort by:</span>
+              <select style={{
+                background: 'transparent',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                color: 'white',
+                outline: 'none',
+                border: 'none'
+              }}>
+                <option>ROI (30d)</option>
+                <option>Followers</option>
+                <option>Win Rate</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        {/* Discover Whales Tab */}
-        {activeTab === 'whales' && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {whales.map((whale) => (
-              <div key={whale.id} className="bg-white rounded-lg shadow-sm p-6 border">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <span className="text-3xl mr-3">{whale.avatar}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
+            {traders.map((trader, i) => (
+              <div 
+                key={trader.name}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '32px',
+                  padding: '2rem',
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1.5rem',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.98)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      position: 'relative',
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      border: '2px solid #e2e8f0'
+                    }}>
+                      <Image src={trader.avatar} alt={trader.name} fill style={{ objectFit: 'cover' }} />
+                    </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{whale.name}</h3>
-                      <p className="text-sm text-gray-500">{whale.address}</p>
+                      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>{trader.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                        <span style={{
+                          fontSize: '10px',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: '#e2e8f0',
+                          color: '#6b7280',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase'
+                        }}>
+                          PRO
+                        </span>
+                        <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: '500' }}>{trader.followers} followers</span>
+                      </div>
                     </div>
                   </div>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    whale.status === 'following' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {whale.status === 'following' ? 'Following' : 'Not Following'}
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <div className="text-sm text-gray-500">Portfolio Value</div>
-                    <div className="font-semibold text-gray-900">{whale.totalValue}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500">Win Rate</div>
-                    <div className="font-semibold text-green-600">{whale.winRate}%</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500">Followers</div>
-                    <div className="font-semibold text-gray-900">{whale.followers.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500">Avg Return</div>
-                    <div className="font-semibold text-green-600">{whale.avgReturn}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#10b981' }}>{trader.roi}</div>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 'bold', textTransform: 'uppercase' }}>30D ROI</div>
                   </div>
                 </div>
-                
-                <div className="mb-4">
-                  <div className="text-sm text-gray-500 mb-1">Recent Activity</div>
-                  <div className="text-sm text-gray-700">{whale.recentTrades} trades in last 30 days</div>
+
+                <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5', margin: 0 }}>
+                  {trader.description}
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '16px',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Win Rate</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>{trader.winRate}</div>
+                  </div>
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '16px',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{ fontSize: '10px', color: '#6b7280', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Primary Assets</div>
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                      {trader.assets.map(a => (
+                        <span key={a} style={{
+                          fontSize: '8px',
+                          padding: '2px 4px',
+                          borderRadius: '4px',
+                          background: 'rgba(99, 102, 241, 0.1)',
+                          color: '#6366f1',
+                          fontWeight: 'bold'
+                        }}>
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                
-                <button
-                  onClick={() => whale.status === 'following' 
-                    ? handleUnfollowWhale(whale.id)
-                    : handleFollowWhale(whale.id)
-                  }
-                  disabled={loading}
-                  className={`w-full py-2 px-4 rounded font-medium text-sm ${
-                    whale.status === 'following'
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+
+                <button style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  {loading ? 'Processing...' : whale.status === 'following' ? 'Unfollow' : 'Follow'}
+                  <Copy style={{ width: '16px', height: '16px' }} />
+                  Copy Trades
                 </button>
               </div>
             ))}
           </div>
-        )}
+        </div>
 
-        {/* Following Tab */}
-        {activeTab === 'following' && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Whales You're Following</h2>
-            </div>
-            
-            {followingWhales.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-500 mb-4">You're not following any whale traders yet</p>
-                <button
-                  onClick={() => setActiveTab('whales')}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Discover whale traders →
-                </button>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {followingWhales.map((whale) => (
-                  <div key={whale.id} className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-4">{whale.avatar}</span>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{whale.name}</h3>
-                          <p className="text-sm text-gray-500">{whale.address}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-6">
-                        <div className="text-center">
-                          <div className="text-sm text-gray-500">Portfolio</div>
-                          <div className="font-semibold">{whale.totalValue}</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-sm text-gray-500">Win Rate</div>
-                          <div className="font-semibold text-green-600">{whale.winRate}%</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-sm text-gray-500">Return</div>
-                          <div className="font-semibold text-green-600">{whale.avgReturn}</div>
-                        </div>
-                        <button
-                          onClick={() => handleUnfollowWhale(whale.id)}
-                          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm font-medium"
-                        >
-                          Unfollow
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Copy Trades Tab */}
-        {activeTab === 'trades' && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Copy Trades</h2>
-            </div>
-            
-            {copyTrades.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-500">No copy trades executed yet</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Whale Trader
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Trade
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Whale Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        My Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {copyTrades.map((trade) => (
-                      <tr key={trade.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{trade.whaleName}</div>
-                          <div className="text-sm text-gray-500">{trade.whaleAddress}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {trade.fromToken} → {trade.toToken}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {trade.amount} {trade.fromToken}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {trade.myAmount} {trade.fromToken}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {trade.timestamp}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            trade.status === 'executed' 
-                              ? 'bg-green-100 text-green-800'
-                              : trade.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {trade.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Settings Tab */}
-        {activeTab === 'settings' && (
-          <div className="space-y-6">
-            {copySettings.map((setting) => {
-              const whale = whales.find(w => w.address === setting.whaleAddress)
-              if (!whale) return null
-              
-              return (
-                <div key={setting.whaleAddress} className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center">
-                      <span className="text-2xl mr-3">{whale.avatar}</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{whale.name}</h3>
-                        <p className="text-sm text-gray-500">{whale.address}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-500 mr-3">Copy Trading</span>
-                      <button
-                        onClick={() => handleUpdateSettings(setting.whaleAddress, { enabled: !setting.enabled })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          setting.enabled ? 'bg-blue-600' : 'bg-gray-200'
-                        }`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          setting.enabled ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Copy Percentage (%)
-                      </label>
-                      <input
-                        type="number"
-                        value={setting.copyPercentage}
-                        onChange={(e) => handleUpdateSettings(setting.whaleAddress, { 
-                          copyPercentage: parseFloat(e.target.value) 
-                        })}
-                        min="0.1"
-                        max="100"
-                        step="0.1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Copy {setting.copyPercentage}% of whale's trade size
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max Amount Per Trade (USDC)
-                      </label>
-                      <input
-                        type="number"
-                        value={setting.maxAmountPerTrade}
-                        onChange={(e) => handleUpdateSettings(setting.whaleAddress, { 
-                          maxAmountPerTrade: e.target.value 
-                        })}
-                        min="1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Maximum USDC value per copy trade
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Min Amount Per Trade (USDC)
-                      </label>
-                      <input
-                        type="number"
-                        value={setting.minAmountPerTrade}
-                        onChange={(e) => handleUpdateSettings(setting.whaleAddress, { 
-                          minAmountPerTrade: e.target.value 
-                        })}
-                        min="1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Minimum USDC value to execute copy trade
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-            
-            {copySettings.length === 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                <p className="text-gray-500 mb-4">No copy trading settings configured</p>
-                <button
-                  onClick={() => setActiveTab('whales')}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Follow a whale trader to configure settings →
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* How It Works */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-4">🔍 How Copy Trading Works</h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-blue-800 mb-2">Real-Time Monitoring</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Envio indexer monitors whale addresses 24/7</li>
-                <li>• Detects Uniswap V3 swaps in real-time</li>
-                <li>• Filters trades by minimum size and frequency</li>
-                <li>• Analyzes trade patterns and success rates</li>
-              </ul>
+        {/* Risk Protection */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '24px',
+          padding: '2rem',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{
+              padding: '12px',
+              borderRadius: '16px',
+              background: 'rgba(99, 102, 241, 0.1)',
+              color: '#6366f1'
+            }}>
+              <ShieldCheck style={{ width: '24px', height: '24px' }} />
             </div>
             <div>
-              <h4 className="font-medium text-blue-800 mb-2">Automated Execution</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Copies trades within seconds of detection</li>
-                <li>• Respects your configured limits and percentages</li>
-                <li>• Uses same DEX and routing as whale trader</li>
-                <li>• Maintains proportional position sizing</li>
-              </ul>
+              <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>Risk Protection Active</h3>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Mirroring is limited to 10% of your total balance per trader.</p>
             </div>
           </div>
+          <button style={{
+            fontSize: '12px',
+            fontWeight: 'bold',
+            color: '#6366f1',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'color 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#4f46e5'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}
+          >
+            Configure Risk Limits
+          </button>
         </div>
       </div>
-    </Layout>
-  )
+    </div>
+  );
 }

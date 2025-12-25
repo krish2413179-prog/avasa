@@ -1,375 +1,415 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
-import { WalletConnect } from '@/components/WalletConnect'
-import { Layout } from '@/components/Layout'
+import { 
+  Droplets, 
+  ArrowRight, 
+  Plus, 
+  Play, 
+  Pause, 
+  Trash2,
+  Clock,
+  Zap,
+  ShieldCheck,
+  ChevronRight,
+  TrendingUp,
+  Activity,
+  History,
+  DollarSign,
+  Brain
+} from 'lucide-react';
+import { useState } from 'react';
+import Link from 'next/link';
 
-interface Stream {
-  id: string
-  recipient: string
-  flowRate: string
-  token: string
-  status: 'active' | 'paused' | 'stopped'
-  totalStreamed: string
-  startedAt: string
-  lastUpdated: string
-}
-
-const STREAM_PRESETS = [
-  { label: 'Salary (Monthly)', rate: '1000 USDC/month', description: 'Standard monthly salary' },
-  { label: 'Freelance (Weekly)', rate: '250 USDC/week', description: 'Weekly freelance payment' },
-  { label: 'Subscription (Daily)', rate: '10 USDC/day', description: 'Daily subscription fee' },
-  { label: 'Hourly Rate', rate: '50 USDC/hour', description: 'Hourly consulting rate' },
-  { label: 'Custom', rate: '', description: 'Set your own rate' },
-]
-
-export default function StreamsPage() {
-  const { address, isConnected } = useAccount()
-  const [streams, setStreams] = useState<Stream[]>([])
-  const [recipient, setRecipient] = useState<string>('')
-  const [streamRate, setStreamRate] = useState<string>('')
-  const [selectedPreset, setSelectedPreset] = useState<string>('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-
-  // Mock streams data
-  useEffect(() => {
-    if (isConnected) {
-      setStreams([
-        {
-          id: '1',
-          recipient: 'alice.base.eth',
-          flowRate: '5 USDC/day',
-          token: 'fUSDCx',
-          status: 'active',
-          totalStreamed: '150 USDC',
-          startedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          lastUpdated: new Date().toISOString()
-        },
-        {
-          id: '2',
-          recipient: '0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6',
-          flowRate: '10 USD/2 hours',
-          token: 'fUSDCx',
-          status: 'paused',
-          totalStreamed: '240 USDC',
-          startedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ])
-    }
-  }, [isConnected])
-
-  const createStream = async () => {
-    if (!recipient || !streamRate) {
-      setMessage('Please enter recipient and stream rate')
-      return
-    }
-
-    setLoading(true)
-    setMessage('')
-
-    try {
-      const response = await fetch('http://localhost:3001/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: {
-            type: 'stream_money',
-            description: `Create money stream of ${streamRate} to ${recipient}`,
-            params: {
-              action: 'create',
-              recipient: recipient,
-              streamRate: streamRate,
-              superToken: 'fUSDCx'
-            }
-          },
-          permissionContext: {
-            userAddress: address,
-            method: 'standard_rwa_enhanced',
-            sessionKey: '0x449f7e2cc2cfbbfbf1f13d265c17f698d9f57f303e4d56d88c178196dc382951',
-            chainId: 84532
-          }
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setMessage(`✅ Successfully created stream of ${streamRate} to ${recipient}`)
-        // Add new stream to list
-        const newStream: Stream = {
-          id: Date.now().toString(),
-          recipient,
-          flowRate: streamRate,
-          token: 'fUSDCx',
-          status: 'active',
-          totalStreamed: '0 USDC',
-          startedAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString()
-        }
-        setStreams(prev => [newStream, ...prev])
-        setRecipient('')
-        setStreamRate('')
-        setSelectedPreset('')
-      } else {
-        setMessage(`❌ Error: ${data.error}`)
-      }
-    } catch (error) {
-      setMessage(`❌ Error creating stream: ${error}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const stopStream = async (streamId: string, streamRecipient: string) => {
-    setLoading(true)
-    setMessage('')
-
-    try {
-      const response = await fetch('http://localhost:3001/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: {
-            type: 'stream_money',
-            description: `Stop money stream to ${streamRecipient}`,
-            params: {
-              action: 'stop',
-              recipient: streamRecipient,
-              superToken: 'fUSDCx'
-            }
-          },
-          permissionContext: {
-            userAddress: address,
-            method: 'standard_rwa_enhanced',
-            sessionKey: '0x449f7e2cc2cfbbfbf1f13d265c17f698d9f57f303e4d56d88c178196dc382951',
-            chainId: 84532
-          }
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setMessage(`✅ Successfully stopped stream to ${streamRecipient}`)
-        setStreams(prev => prev.map(stream => 
-          stream.id === streamId 
-            ? { ...stream, status: 'stopped' as const }
-            : stream
-        ))
-      } else {
-        setMessage(`❌ Error: ${data.error}`)
-      }
-    } catch (error) {
-      setMessage(`❌ Error stopping stream: ${error}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handlePresetSelect = (preset: string, rate: string) => {
-    setSelectedPreset(preset)
-    setStreamRate(rate)
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'paused': return 'bg-yellow-100 text-yellow-800'
-      case 'stopped': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
+export default function MoneyStreamsPage() {
   return (
-    <Layout>
-      <div className="p-8">
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'auto'
+    }}>
+      {/* Navigation */}
+      <nav style={{ 
+        background: 'rgba(255, 255, 255, 0.95)', 
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        padding: '1rem 0'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              }}>
+                <Brain style={{ width: '20px', height: '20px', color: 'white' }} />
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>PropChain AI</h1>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Money Streams</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <div style={{ 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        padding: '2rem 1rem',
+        minHeight: 'calc(100vh - 80px)'
+      }}>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            💧 Money Streams
-          </h1>
-          <p className="text-gray-600">
-            Create continuous money streams using Superfluid protocol
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1rem',
+          marginBottom: '2rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 style={{ 
+              fontSize: '3rem', 
+              fontWeight: 'bold', 
+              color: 'white', 
+              margin: 0,
+              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              Money Streams
+            </h1>
+            <span style={{
+              padding: '0.25rem 0.5rem',
+              borderRadius: '6px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: '#10b981',
+              fontSize: '0.625rem',
+              fontWeight: 'bold',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              Powered by Superfluid
+            </span>
+          </div>
+          <p style={{ fontSize: '1.125rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0 }}>
+            Continuous real-time value transfer on Base Sepolia
           </p>
+          
+          <button style={{
+            padding: '0.75rem 1.5rem',
+            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+            color: 'white',
+            borderRadius: '12px',
+            fontSize: '0.875rem',
+            fontWeight: 'bold',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxShadow: '0 8px 32px rgba(59, 130, 246, 0.2)',
+            alignSelf: 'flex-start',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 40px rgba(59, 130, 246, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 8px 32px rgba(59, 130, 246, 0.2)';
+          }}>
+            <Plus style={{ width: '16px', height: '16px' }} />
+            Create New Stream
+          </button>
         </div>
 
-        {/* Protocol Info */}
-        <div className="mb-8 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-3">🔗 Superfluid Protocol Integration</h3>
-          <div className="grid md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-blue-700 mb-2"><strong>Host Contract:</strong></p>
-              <p className="font-mono text-blue-600 text-xs">0x4C073B3baB6d88B6575C8743282064147A6A6903</p>
+        {/* Stats Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          {[
+            { label: 'Outflow Rate', value: '12.5 USDC / day', color: '#ef4444', icon: TrendingUp },
+            { label: 'Inflow Rate', value: '45.2 USDC / day', color: '#10b981', icon: TrendingUp },
+            { label: 'Total Streamed', value: '$12,450.20', color: 'white', icon: Activity },
+          ].map((stat, i) => (
+            <div 
+              key={stat.label}
+              style={{
+                padding: '1.5rem',
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}
+            >
+              <div style={{ 
+                fontSize: '0.625rem', 
+                fontWeight: 'bold', 
+                color: '#6b7280', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.05em', 
+                marginBottom: '0.5rem' 
+              }}>
+                {stat.label}
+              </div>
+              <div style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: 'bold', 
+                color: stat.color === 'white' ? '#1f2937' : stat.color 
+              }}>
+                {stat.value}
+              </div>
             </div>
-            <div>
-              <p className="text-blue-700 mb-2"><strong>fUSDCx Token:</strong></p>
-              <p className="font-mono text-blue-600 text-xs">0x42bb40bF79730451B11f6De1CbA222F17b87Afd7</p>
+          ))}
+        </div>
+
+        {/* Main Content Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '2fr 1fr', 
+          gap: '2rem'
+        }}>
+          {/* Active Streams */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3 style={{ 
+              fontSize: '1.125rem', 
+              fontWeight: 'bold', 
+              color: 'white', 
+              margin: 0,
+              textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+            }}>
+              Active Streams
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {[
+                { name: 'Salary Distribution', to: 'alice.base.eth', rate: '5 USDC / day', status: 'Streaming' },
+                { name: 'Property Management', to: 'hq.propchain.eth', rate: '2.5 USDC / day', status: 'Streaming' },
+                { name: 'Yield Reinvestment', to: 'Yield Farmer', rate: '5 USDC / day', status: 'Streaming' },
+              ].map((stream, i) => (
+                <div key={i} style={{
+                  padding: '1.25rem',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      position: 'relative',
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '16px',
+                      background: '#18181b',
+                      border: '1px solid #27272a',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#10b981',
+                      overflow: 'hidden'
+                    }}>
+                      <Droplets style={{ width: '24px', height: '24px', position: 'relative', zIndex: 10 }} />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '50%',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        animation: 'pulse 2s infinite'
+                      }} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>{stream.name}</h4>
+                      <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>
+                        To: <span style={{ color: '#3b82f6', fontWeight: '500' }}>{stream.to}</span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#1f2937' }}>{stream.rate}</div>
+                      <div style={{ 
+                        fontSize: '0.625rem', 
+                        color: '#10b981', 
+                        fontWeight: 'bold', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.1em', 
+                        marginTop: '0.125rem' 
+                      }}>
+                        Active
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <button style={{
+                        padding: '0.5rem',
+                        borderRadius: '12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#6b7280',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#27272a'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                        <Pause style={{ width: '16px', height: '16px' }} />
+                      </button>
+                      <button style={{
+                        padding: '0.5rem',
+                        borderRadius: '12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'rgba(239, 68, 68, 0.5)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#27272a';
+                        e.currentTarget.style.color = '#ef4444';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = 'rgba(239, 68, 68, 0.5)';
+                      }}>
+                        <Trash2 style={{ width: '16px', height: '16px' }} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{
+              padding: '1.5rem',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>Protocol Token</h3>
+              <div style={{
+                padding: '1rem',
+                borderRadius: '16px',
+                background: '#18181b',
+                border: '1px solid #27272a',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <DollarSign style={{ width: '16px', height: '16px', color: '#10b981' }} />
+                    </div>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'white' }}>fUSDCx</span>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'white' }}>4,250.00</div>
+                    <div style={{ fontSize: '0.625rem', color: '#6b7280' }}>Wrapped USDC</div>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <button style={{
+                    padding: '0.5rem',
+                    borderRadius: '12px',
+                    background: '#27272a',
+                    fontSize: '0.625rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#3f3f46'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#27272a'}>
+                    Wrap USDC
+                  </button>
+                  <button style={{
+                    padding: '0.5rem',
+                    borderRadius: '12px',
+                    background: '#27272a',
+                    fontSize: '0.625rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#3f3f46'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#27272a'}>
+                    Unwrap
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '1.5rem',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#3b82f6' }}>
+                <ShieldCheck style={{ width: '20px', height: '20px' }} />
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>Real-time Settlement</h3>
+              </div>
+              <p style={{ 
+                fontSize: '0.75rem', 
+                color: '#6b7280', 
+                lineHeight: '1.5', 
+                margin: 0 
+              }}>
+                Superfluid allows your assets to be settled every second. This means yield starts compounding 
+                the moment it is generated, not at the end of the month.
+              </p>
             </div>
           </div>
         </div>
-
-        {/* Wallet Connection */}
-        <div className="mb-8">
-          <WalletConnect />
-        </div>
-
-        {isConnected && (
-          <>
-            {/* Create Stream */}
-            <div className="mb-8 bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">🆕 Create New Stream</h3>
-              
-              {/* Stream Presets */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Stream Presets
-                </label>
-                <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {STREAM_PRESETS.map(preset => (
-                    <button
-                      key={preset.label}
-                      onClick={() => handlePresetSelect(preset.label, preset.rate)}
-                      className={`p-3 rounded-lg border text-left transition-colors ${
-                        selectedPreset === preset.label
-                          ? 'border-blue-500 bg-blue-50 text-blue-800'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="font-medium text-sm">{preset.label}</div>
-                      <div className="text-xs text-gray-500 mt-1">{preset.description}</div>
-                      {preset.rate && (
-                        <div className="text-xs font-mono mt-1">{preset.rate}</div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Recipient Address or Basename
-                  </label>
-                  <input
-                    type="text"
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="alice.base.eth or 0x123..."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Stream Rate
-                  </label>
-                  <input
-                    type="text"
-                    value={streamRate}
-                    onChange={(e) => setStreamRate(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="5 USDC/day or 10 USD/2 hours"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Examples: "5 USDC/day", "10 USD/2 hours", "100 USDC/week"
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-between items-center">
-                <button
-                  onClick={createStream}
-                  disabled={loading || !recipient || !streamRate}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {loading ? 'Creating Stream...' : '💧 Create Stream'}
-                </button>
-
-                {message && (
-                  <div className="ml-4 p-3 bg-gray-50 rounded-lg flex-1">
-                    <p className="text-sm text-gray-700">{message}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Active Streams */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">🌊 Your Active Streams</h3>
-              
-              {streams.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No streams created yet.</p>
-                  <p className="text-sm mt-2">Create your first money stream above!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {streams.map(stream => (
-                    <div key={stream.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            Stream to {stream.recipient}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            {stream.flowRate} • {stream.token}
-                          </p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(stream.status)}`}>
-                          {stream.status.toUpperCase()}
-                        </span>
-                      </div>
-                      
-                      <div className="grid md:grid-cols-4 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-gray-500">Total Streamed</p>
-                          <p className="font-medium text-green-600">{stream.totalStreamed}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Started</p>
-                          <p className="font-medium text-gray-900">
-                            {new Date(stream.startedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Last Updated</p>
-                          <p className="font-medium text-gray-900">
-                            {new Date(stream.lastUpdated).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Flow Rate</p>
-                          <p className="font-medium text-blue-600">{stream.flowRate}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex space-x-3">
-                        {stream.status === 'active' && (
-                          <button
-                            onClick={() => stopStream(stream.id, stream.recipient)}
-                            disabled={loading}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                          >
-                            🛑 Stop Stream
-                          </button>
-                        )}
-                        <button
-                          className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm font-medium"
-                        >
-                          📊 View Details
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
       </div>
-    </Layout>
-  )
+    </div>
+  );
 }

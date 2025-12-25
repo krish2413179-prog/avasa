@@ -2,8 +2,51 @@
 const path = require('path')
 
 const nextConfig = {
-  // Add empty turbopack config to silence the warning
+  // Empty turbopack config to silence warnings
   turbopack: {},
+  
+  // Configure external image domains (using remotePatterns instead of deprecated domains)
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.pravatar.cc',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+  
+  // Add security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none',
+          },
+        ],
+      },
+    ];
+  },
   
   webpack: (config, { isServer }) => {
     config.resolve.fallback = { 
@@ -21,26 +64,6 @@ const nextConfig = {
       path: false
     };
     
-    // Get the absolute path to viem
-    const viemPath = path.dirname(require.resolve('viem/package.json'))
-    
-    // Force single viem version to resolve conflicts
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@react-native-async-storage/async-storage': false,
-      // Exclude problematic Base Account package
-      '@base-org/account': false,
-      // Force all viem imports to use our main viem version with absolute paths
-      'viem$': path.join(viemPath, 'index.ts'),
-      'viem/actions': path.join(viemPath, 'actions'),
-      'viem/chains': path.join(viemPath, 'chains'),
-      'viem/utils': path.join(viemPath, 'utils'),
-      'viem/experimental': path.join(viemPath, 'experimental'),
-      'viem/accounts': path.join(viemPath, 'accounts'),
-      'viem/ens': path.join(viemPath, 'ens'),
-      'viem/siwe': path.join(viemPath, 'siwe'),
-    };
-    
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     
     // Fix for viem and other ESM modules
@@ -53,7 +76,7 @@ const nextConfig = {
     
     return config;
   },
-  transpilePackages: ['@rainbow-me/rainbowkit', 'wagmi', 'viem', '@reown/appkit', '@reown/appkit-controllers', '@coinbase/wallet-sdk']
+  transpilePackages: ['@rainbow-me/rainbowkit', 'wagmi', 'viem']
 }
 
 module.exports = nextConfig

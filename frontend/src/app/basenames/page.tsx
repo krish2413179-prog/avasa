@@ -1,313 +1,459 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useAccount } from 'wagmi'
-import { WalletConnect } from '@/components/WalletConnect'
-import { Layout } from '@/components/Layout'
+import { 
+  Link2, 
+  Search, 
+  ArrowRight, 
+  CheckCircle2, 
+  ShieldCheck, 
+  Zap,
+  Globe,
+  Plus,
+  Info,
+  History,
+  Activity,
+  Brain
+} from 'lucide-react';
+import { useState } from 'react';
+import Link from 'next/link';
 
 export default function BasenamesPage() {
-  const { address, isConnected } = useAccount()
-  const [basename, setBasename] = useState<string>('')
-  const [targetAddress, setTargetAddress] = useState<string>('')
-  const [resolveResult, setResolveResult] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [activeTab, setActiveTab] = useState<'resolve' | 'set'>('resolve')
-
-  const resolveBasename = async () => {
-    if (!basename) {
-      setMessage('Please enter a basename')
-      return
-    }
-
-    setLoading(true)
-    setMessage('')
-
-    try {
-      const response = await fetch('http://localhost:3001/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: {
-            type: 'resolve_basename',
-            description: `Resolve ${basename} to wallet address`,
-            params: {
-              action: 'resolve',
-              basename: basename
-            }
-          },
-          permissionContext: {
-            userAddress: address,
-            method: 'standard_rwa_enhanced',
-            sessionKey: '0x449f7e2cc2cfbbfbf1f13d265c17f698d9f57f303e4d56d88c178196dc382951',
-            chainId: 84532
-          }
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setResolveResult(data)
-        setMessage(`✅ Successfully resolved ${basename}`)
-      } else {
-        setMessage(`❌ Error: ${data.error}`)
-      }
-    } catch (error) {
-      setMessage(`❌ Error resolving basename: ${error}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const setBasenameRecord = async () => {
-    if (!basename || !targetAddress) {
-      setMessage('Please enter both basename and target address')
-      return
-    }
-
-    setLoading(true)
-    setMessage('')
-
-    try {
-      const response = await fetch('http://localhost:3001/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: {
-            type: 'resolve_basename',
-            description: `Set ${basename} to point to ${targetAddress}`,
-            params: {
-              action: 'set',
-              basename: basename,
-              address: targetAddress
-            }
-          },
-          permissionContext: {
-            userAddress: address,
-            method: 'eip7715_advanced',
-            sessionKey: '0x449f7e2cc2cfbbfbf1f13d265c17f698d9f57f303e4d56d88c178196dc382951',
-            chainId: 84532
-          }
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setMessage(`✅ Successfully set ${basename} to point to ${targetAddress}`)
-        setBasename('')
-        setTargetAddress('')
-      } else {
-        setMessage(`❌ Error: ${data.error}`)
-      }
-    } catch (error) {
-      setMessage(`❌ Error setting basename: ${error}`)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [search, setSearch] = useState('');
 
   return (
-    <Layout>
-      <div className="p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🏷️ Basenames Management
-          </h1>
-          <p className="text-gray-600">
-            Resolve and manage human-readable addresses on Base using ENS
-          </p>
-        </div>
-
-        {/* Protocol Info */}
-        <div className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-green-800 mb-3">🔗 Base ENS Integration</h3>
-          <div className="text-sm">
-            <p className="text-green-700 mb-2"><strong>L2 Resolver:</strong></p>
-            <p className="font-mono text-green-600 text-xs">0x6533C94869D28fAA8dF77cc63f9e2b2D6Cf77eBA</p>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'auto'
+    }}>
+      {/* Navigation */}
+      <nav style={{ 
+        background: 'rgba(255, 255, 255, 0.95)', 
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        padding: '1rem 0'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              }}>
+                <Brain style={{ width: '20px', height: '20px', color: 'white' }} />
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>PropChain AI</h1>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Basenames</p>
+              </div>
+            </Link>
           </div>
         </div>
+      </nav>
 
-        {/* Wallet Connection */}
-        <div className="mb-8">
-          <WalletConnect />
+      <div style={{ 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        padding: '2rem 1rem',
+        minHeight: 'calc(100vh - 80px)'
+      }}>
+        {/* Header */}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1rem',
+          marginBottom: '2rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 style={{ 
+              fontSize: '3rem', 
+              fontWeight: 'bold', 
+              color: 'white', 
+              margin: 0,
+              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              Basenames
+            </h1>
+            <span style={{
+              padding: '0.25rem 0.5rem',
+              borderRadius: '6px',
+              background: 'rgba(59, 130, 246, 0.1)',
+              color: '#3b82f6',
+              fontSize: '0.625rem',
+              fontWeight: 'bold',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              L2 Identity
+            </span>
+          </div>
+          <p style={{ fontSize: '1.125rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0 }}>
+            Human-readable identity for the Base ecosystem
+          </p>
+          
+          <button style={{
+            padding: '0.75rem 1.5rem',
+            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+            color: 'white',
+            borderRadius: '12px',
+            fontSize: '0.875rem',
+            fontWeight: 'bold',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxShadow: '0 8px 32px rgba(59, 130, 246, 0.2)',
+            alignSelf: 'flex-start',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 40px rgba(59, 130, 246, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 8px 32px rgba(59, 130, 246, 0.2)';
+          }}>
+            <Plus style={{ width: '16px', height: '16px' }} />
+            Register New Name
+          </button>
         </div>
 
-        {isConnected && (
-          <>
-            {/* Tabs */}
-            <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab('resolve')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'resolve'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    🔍 Resolve Basename
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('set')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'set'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    📝 Set Basename Record
-                  </button>
-                </nav>
-              </div>
-            </div>
-
-            {/* Resolve Tab */}
-            {activeTab === 'resolve' && (
-              <div className="bg-white rounded-lg p-6 shadow-sm mb-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">🔍 Resolve Basename to Address</h3>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Basename (e.g., alice.base.eth)
-                    </label>
-                    <input
-                      type="text"
-                      value={basename}
-                      onChange={(e) => setBasename(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="alice.base.eth"
-                    />
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <button
-                      onClick={resolveBasename}
-                      disabled={loading || !basename}
-                      className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                    >
-                      {loading ? 'Resolving...' : '🔍 Resolve Address'}
-                    </button>
-                  </div>
+        {/* Main Content Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '2fr 1fr', 
+          gap: '2rem'
+        }}>
+          {/* Search Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{
+              padding: '2rem',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2rem'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <label style={{ 
+                  fontSize: '0.75rem', 
+                  fontWeight: 'bold', 
+                  color: '#6b7280', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.05em' 
+                }}>
+                  Search or Resolve
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Search style={{ 
+                    position: 'absolute', 
+                    left: '16px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)', 
+                    width: '20px', 
+                    height: '20px', 
+                    color: '#6b7280' 
+                  }} />
+                  <input 
+                    type="text" 
+                    placeholder="Enter a basename (e.g. alice.base.eth)"
+                    style={{
+                      width: '100%',
+                      paddingLeft: '48px',
+                      paddingRight: '16px',
+                      paddingTop: '16px',
+                      paddingBottom: '16px',
+                      background: '#18181b',
+                      border: '1px solid #27272a',
+                      borderRadius: '16px',
+                      fontSize: '1.125rem',
+                      fontWeight: 'bold',
+                      color: 'white',
+                      outline: 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                      e.currentTarget.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#27272a';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  />
                 </div>
+              </div>
 
-                {resolveResult && (
-                  <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="font-semibold text-green-800 mb-2">Resolution Result</h4>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-green-600">Basename:</span>
-                        <span className="ml-2 font-mono">{resolveResult.basename}</span>
-                      </div>
-                      <div>
-                        <span className="text-green-600">Resolved Address:</span>
-                        <span className="ml-2 font-mono text-xs">{resolveResult.resolvedAddress}</span>
-                      </div>
-                      <div>
-                        <span className="text-green-600">Namehash:</span>
-                        <span className="ml-2 font-mono text-xs">{resolveResult.namehash}</span>
-                      </div>
+              {search && (
+                <div style={{
+                  padding: '1.5rem',
+                  borderRadius: '16px',
+                  background: '#18181b',
+                  border: '1px solid #27272a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.2s'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: 'rgba(59, 130, 246, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Globe style={{ width: '24px', height: '24px', color: '#3b82f6' }} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', margin: 0 }}>{search}</h4>
+                      <p style={{ 
+                        fontSize: '0.75rem', 
+                        color: '#6b7280', 
+                        fontFamily: 'monospace', 
+                        margin: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '200px'
+                      }}>
+                        0x6533...7eBA
+                      </p>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Set Tab */}
-            {activeTab === 'set' && (
-              <div className="bg-white rounded-lg p-6 shadow-sm mb-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">📝 Set Basename Record</h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Basename (e.g., myname.base.eth)
-                    </label>
-                    <input
-                      type="text"
-                      value={basename}
-                      onChange={(e) => setBasename(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="myname.base.eth"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Target Address
-                    </label>
-                    <input
-                      type="text"
-                      value={targetAddress}
-                      onChange={(e) => setTargetAddress(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6"
-                    />
-                  </div>
-                  
-                  <button
-                    onClick={setBasenameRecord}
-                    disabled={loading || !basename || !targetAddress}
-                    className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                  >
-                    {loading ? 'Setting Record...' : '📝 Set Basename Record'}
+                  <button style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '12px',
+                    background: 'white',
+                    color: 'black',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'white'}>
+                    View Profile
                   </button>
                 </div>
+              )}
 
-                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Important Notes</h4>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    <li>• Setting basename records requires advanced permissions (EIP-7715)</li>
-                    <li>• You must own the basename to set its records</li>
-                    <li>• This operation may require gas fees</li>
-                    <li>• Changes may take a few minutes to propagate</li>
-                  </ul>
+              <div style={{
+                padding: '1rem',
+                borderRadius: '16px',
+                background: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.1)',
+                display: 'flex',
+                gap: '1rem'
+              }}>
+                <div style={{
+                  padding: '0.5rem',
+                  borderRadius: '12px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  height: 'fit-content'
+                }}>
+                  <Info style={{ width: '20px', height: '20px', color: '#3b82f6' }} />
                 </div>
-              </div>
-            )}
-
-            {/* Message Display */}
-            {message && (
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">{message}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Examples */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">💡 Examples</h3>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">Common Basenames to Resolve:</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• alice.base.eth</li>
-                    <li>• bob.base.eth</li>
-                    <li>• charlie.base.eth</li>
-                    <li>• defi.base.eth</li>
-                  </ul>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">AI Commands:</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• "Resolve alice.base.eth to address"</li>
-                    <li>• "Set myname.base.eth to 0x123..."</li>
-                    <li>• "Look up bob.base.eth"</li>
-                    <li>• "Update my basename record"</li>
-                  </ul>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'white', margin: 0 }}>L2 Resolver Technology</h4>
+                  <p style={{ 
+                    fontSize: '0.75rem', 
+                    color: '#9ca3af', 
+                    lineHeight: '1.5', 
+                    margin: 0 
+                  }}>
+                    Basenames are resolved directly on Base L2, ensuring sub-second resolution times for 
+                    your AI commands and money streams.
+                  </p>
                 </div>
               </div>
             </div>
-          </>
-        )}
+
+            {/* My Names Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: 'bold', 
+                color: 'white', 
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+              }}>
+                <History style={{ width: '20px', height: '20px', color: '#6b7280' }} />
+                My Names
+              </h3>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+                gap: '1rem' 
+              }}>
+                {[
+                  { name: 'user.base.eth', primary: true },
+                  { name: 'vault.base.eth', primary: false },
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    padding: '1rem',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '12px',
+                        background: '#18181b',
+                        border: '1px solid #27272a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Link2 style={{ width: '20px', height: '20px', color: '#9ca3af' }} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>{item.name}</h4>
+                        {item.primary && (
+                          <span style={{ 
+                            fontSize: '0.5rem', 
+                            fontWeight: 'bold', 
+                            color: '#3b82f6', 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.1em' 
+                          }}>
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button style={{
+                      padding: '0.5rem',
+                      borderRadius: '8px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#6b7280',
+                      cursor: 'pointer',
+                      opacity: 0,
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#27272a';
+                      e.currentTarget.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.opacity = '0';
+                    }}>
+                      <ArrowRight style={{ width: '16px', height: '16px' }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{
+              padding: '1.5rem',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>Identity Health</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1rem',
+                  borderRadius: '16px',
+                  background: '#18181b',
+                  border: '1px solid #27272a'
+                }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#6b7280' }}>Reverse Resolution</span>
+                  <CheckCircle2 style={{ width: '16px', height: '16px', color: '#10b981' }} />
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1rem',
+                  borderRadius: '16px',
+                  background: '#18181b',
+                  border: '1px solid #27272a'
+                }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#6b7280' }}>Linked Streams</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'white' }}>4 Active</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '1.5rem',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#3b82f6' }}>
+                <ShieldCheck style={{ width: '20px', height: '20px' }} />
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>Security Note</h3>
+              </div>
+              <p style={{ 
+                fontSize: '0.75rem', 
+                color: '#6b7280', 
+                lineHeight: '1.5', 
+                margin: 0 
+              }}>
+                Avasa uses Basenames to verify recipient identities before executing any money 
+                streams or asset transfers. This prevents errors when typing hex addresses.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-    </Layout>
-  )
+    </div>
+  );
 }

@@ -1,435 +1,586 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { AgentInput } from '@/components/AgentInput'
-import { ActionCard } from '@/components/ActionCard'
-import { WalletConnect } from '@/components/WalletConnect'
-import { Layout } from '@/components/Layout'
-import { useAccount } from 'wagmi'
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import {
+  TrendingUp,
+  DollarSign,
+  Building2,
+  Zap,
+  ArrowUpRight,
+  Activity,
+  Wallet,
+  Bell,
+  Search,
+  Brain,
+  Menu,
+  X,
+} from 'lucide-react';
 
-export default function Home() {
-  const { isConnected } = useAccount()
-  const [parsedAction, setParsedAction] = useState(null)
-  const [actionLog, setActionLog] = useState<string[]>([])
+interface PortfolioMetrics {
+  totalValue: number;
+  totalValueUSD: string;
+  change24h: number;
+  avgYield: number;
+  activeAssets: number;
+  ethPrice: number;
+}
 
-  const handleActionParsed = (action: any) => {
-    setParsedAction(action)
-    setActionLog(prev => [...prev, `🤖 AI Parsed: ${action.description}`])
-  }
+export default function Dashboard() {
+  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [portfolioMetrics, setPortfolioMetrics] = useState<PortfolioMetrics | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleActionExecuted = (result: string) => {
-    setActionLog(prev => [...prev, `✅ ${result}`])
-    setParsedAction(null)
-  }
+  useEffect(() => {
+    setMounted(true);
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const marketResponse = await fetch('http://localhost:3001/api/enhanced-properties/market-data');
+      const marketData = await marketResponse.json();
+
+      let ethPrice = 2940;
+      if (marketData.success) {
+        ethPrice = marketData.data.ethPrice;
+      }
+
+      setPortfolioMetrics({
+        totalValue: 12.5,
+        totalValueUSD: '$36.7M',
+        change24h: 8.2,
+        avgYield: 11.4,
+        activeAssets: 8,
+        ethPrice: ethPrice,
+      });
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setPortfolioMetrics({
+        totalValue: 12.5,
+        totalValueUSD: '$36.7M',
+        change24h: 8.2,
+        avgYield: 11.4,
+        activeAssets: 8,
+        ethPrice: 2940,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || isProcessing) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setIsProcessing(true);
+    
+    // Add user message to chat
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+
+    try {
+      // Send message to backend AI parser
+      const response = await fetch('http://localhost:3001/api/parse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ input: userMessage }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.type) {
+        // Successfully parsed the command - show the parsed action
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `✅ ${data.description}\n\nAction: ${data.type}\nDetails: ${JSON.stringify(data.params, null, 2)}` 
+        }]);
+      } else {
+        // Handle error response
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: data.error || 'Sorry, I encountered an error processing your request. Please try again.' 
+        }]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I\'m having trouble connecting to the AI service. Please check that the backend is running.' 
+      }]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isProcessing) {
+      handleSendMessage();
+    }
+  };
+
+  if (!mounted) return null;
 
   return (
-    <Layout>
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            🏢 PropChain AI
-          </h1>
-          <p className="text-xl text-gray-600 mb-2">
-            Real World Asset (RWA) Investment Platform
-          </p>
-          <p className="text-lg text-gray-500">
-            AI-Powered • MetaMask Advanced Permissions • Envio Indexing
-          </p>
-        </div>
+    <div style={{ 
+      minHeight: '100vh', 
+      height: '100%',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'auto'
+    }}>
+      {/* Navigation */}
+      <nav style={{ 
+        background: 'rgba(255, 255, 255, 0.95)', 
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        padding: '1rem 0'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Logo */}
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              }}>
+                <Brain style={{ width: '20px', height: '20px', color: 'white' }} />
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>PropChain AI</h1>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Next-Gen RWA Platform</p>
+              </div>
+            </Link>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-blue-500">
-            <h3 className="font-semibold text-gray-900 mb-2">🏠 Tokenized Real Estate</h3>
-            <p className="text-sm text-gray-600">Fractional ownership of properties with automated yield distribution</p>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-green-500">
-            <h3 className="font-semibold text-gray-900 mb-2">🤖 AI Portfolio Management</h3>
-            <p className="text-sm text-gray-600">Groq AI analyzes market data for optimal investment strategies</p>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-purple-500">
-            <h3 className="font-semibold text-gray-900 mb-2">🔐 Advanced Permissions</h3>
-            <p className="text-sm text-gray-600">EIP-7702 smart accounts with compliance automation</p>
-          </div>
-          <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-orange-500">
-            <h3 className="font-semibold text-gray-900 mb-2">📊 Real-time Analytics</h3>
-            <p className="text-sm text-gray-600">Envio indexer provides live performance metrics</p>
-          </div>
-        </div>
+            {/* Desktop Navigation */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {[
+                  { name: 'Dashboard', href: '/' },
+                  { name: 'Properties', href: '/properties' },
+                  { name: 'Portfolio', href: '/portfolio' },
+                  { name: 'Trading', href: '/manual-trade' },
+                ].map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      color: '#374151',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f3f4f6';
+                      e.currentTarget.style.color = '#1f2937';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#374151';
+                    }}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
 
-        {/* New Advanced DeFi Features */}
-        <div className="mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-indigo-800 mb-4">🚀 Advanced Trading Features</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg p-4 border-l-4 border-blue-400">
-              <h4 className="font-semibold text-blue-800 mb-2">⚖️ Auto-Rebalance Portfolio</h4>
-              <p className="text-sm text-blue-700 mb-3">Intelligent robo-advisor that maintains target allocations</p>
-              <div className="text-xs text-blue-600 space-y-1">
-                <div>• "Keep my portfolio 60% Real Estate and 40% ETH"</div>
-                <div>• Automatic weekly/monthly rebalancing</div>
-                <div>• Chainlink price feeds + Uniswap V3</div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg p-4 border-l-4 border-green-400">
-              <h4 className="font-semibold text-green-800 mb-2">👥 Copy Trading</h4>
-              <p className="text-sm text-green-700 mb-3">Follow whale trades automatically with Envio monitoring</p>
-              <div className="text-xs text-green-600 space-y-1">
-                <div>• "Copy every trade from nancy.base.eth"</div>
-                <div>• Real-time Envio swap detection</div>
-                <div>• Configurable copy percentage & limits</div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg p-4 border-l-4 border-purple-400">
-              <h4 className="font-semibold text-purple-800 mb-2">📋 Limit Orders</h4>
-              <p className="text-sm text-purple-700 mb-3">Buy the dip with AI-powered price monitoring</p>
-              <div className="text-xs text-purple-600 space-y-1">
-                <div>• "Buy ETH if price drops below $1500"</div>
-                <div>• Chainlink price monitoring</div>
-                <div>• Automatic execution on Uniswap V3</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* EIP-7715 Advanced Permission Strategies */}
-        <div className="mb-8 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-emerald-800 mb-4">🔐 EIP-7715 Advanced Permission Strategies</h3>
-          <p className="text-sm text-emerald-700 mb-4">
-            The "Best Use" of MetaMask Advanced Permissions for automated wealth management with compound interest
-          </p>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg p-4 border-l-4 border-yellow-400">
-              <h4 className="font-semibold text-yellow-800 mb-2">🌾 Yield Farmer (Auto-Compounding)</h4>
-              <p className="text-sm text-yellow-700 mb-3">Automatically reinvest rental income for compound growth</p>
-              <div className="text-xs text-yellow-600 space-y-1 mb-3">
-                <div>• "Turn on Auto-Compound for property 1"</div>
-                <div>• Only spend funds from yield claims</div>
-                <div>• Creates infinite compound interest</div>
-                <div>• One signature = Automated growth</div>
-              </div>
-              <a 
-                href="/yield-farmer"
-                className="inline-block bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 text-sm font-medium"
-              >
-                🌾 Manage Yield Farmer
-              </a>
-            </div>
-            <div className="bg-white rounded-lg p-4 border-l-4 border-blue-400">
-              <h4 className="font-semibold text-blue-800 mb-2">📈 Smart DCA (Dollar Cost Averaging)</h4>
-              <p className="text-sm text-blue-700 mb-3">Weekly investments with rate limits and day restrictions</p>
-              <div className="text-xs text-blue-600 space-y-1 mb-3">
-                <div>• "Invest $50 every Monday in property 2"</div>
-                <div>• Rate limit: 50 USDC per week maximum</div>
-                <div>• Only executes on Mondays (safety)</div>
-                <div>• Even if hacked, only $50/week at risk</div>
-              </div>
-              <a 
-                href="/smart-dca"
-                className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
-              >
-                📈 Manage Smart DCA
-              </a>
-            </div>
-            <div className="bg-white rounded-lg p-4 border-l-4 border-red-400">
-              <h4 className="font-semibold text-red-800 mb-2">🚨 Emergency Brake (Stop-Loss)</h4>
-              <p className="text-sm text-red-700 mb-3">Dormant permission that activates on price triggers</p>
-              <div className="text-xs text-red-600 space-y-1 mb-3">
-                <div>• "Emergency sell if ETH drops below $1500"</div>
-                <div>• Dormant until price trigger activated</div>
-                <div>• Institutional-grade risk management</div>
-                <div>• Automatic ETH → USDC protection</div>
-              </div>
-              <a 
-                href="/emergency-brake"
-                className="inline-block bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
-              >
-                🚨 Manage Emergency Brake
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Original DeFi Features */}
-        <div className="mb-8 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-cyan-800 mb-4">💧 Core DeFi Features</h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg p-4 border-l-4 border-blue-400">
-              <h4 className="font-semibold text-blue-800 mb-2">💧 Stream Money (Superfluid)</h4>
-              <p className="text-sm text-blue-700 mb-3">Continuous money streaming for salaries & subscriptions</p>
-              <div className="text-xs text-blue-600 space-y-1">
-                <div>• Host: 0x4C073B3baB6d88B6575C8743282064147A6A6903</div>
-                <div>• fUSDCx: 0x42bb40bF79730451B11f6De1CbA222F17b87Afd7</div>
-                <div>• "Stream 5 USDC/day to alice.base.eth"</div>
-                <div>• "Stream 10 USD/2 hours to ales"</div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg p-4 border-l-4 border-green-400">
-              <h4 className="font-semibold text-green-800 mb-2">🏷️ Use Human Names (Basenames)</h4>
-              <p className="text-sm text-green-700 mb-3">ENS resolution on Base for human-readable addresses</p>
-              <div className="text-xs text-green-600 space-y-1">
-                <div>• L2 Resolver: 0x6533C94869D28fAA8dF77cc63f9e2b2D6Cf77eBA</div>
-                <div>• "Resolve alice.base.eth"</div>
-                <div>• "Set myname.base.eth to 0x123..."</div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg p-4 border-l-4 border-purple-400">
-              <h4 className="font-semibold text-purple-800 mb-2">🏦 Borrow Against Assets (Aave V3)</h4>
-              <p className="text-sm text-purple-700 mb-3">Leverage your assets with decentralized lending</p>
-              <div className="text-xs text-purple-600 space-y-1">
-                <div>• Pool Provider: 0x012bAC54348C0E635dCAc9D5FB99f06F24136C9A</div>
-                <div>• "Borrow 500 USDC against 1 WETH"</div>
-                <div>• "Repay my 500 USDC loan"</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Wallet Connection */}
-        <div className="mb-8">
-          <WalletConnect />
-        </div>
-
-        {isConnected && (
-          <>
-            {/* RWA Information Panel */}
-            <div className="mb-8 bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">🏢 Available Properties & Smart Commands</h3>
-              
-              {/* Property Registry */}
-              <div className="mb-6">
-                <h4 className="font-medium text-gray-800 mb-3">🏠 Property Registry (10 Deployed Contracts):</h4>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                  <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
-                    <div className="font-medium text-blue-800">#1 Manhattan Luxury Apartments</div>
-                    <div className="text-blue-600">2500 ETH • 4.2% yield • "this property"</div>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded border-l-4 border-green-400">
-                    <div className="font-medium text-green-800">#2 Miami Beach Condos</div>
-                    <div className="text-green-600">1800 ETH • 5.1% yield • "beachfront"</div>
-                  </div>
-                  <div className="bg-purple-50 p-3 rounded border-l-4 border-purple-400">
-                    <div className="font-medium text-purple-800">#3 Austin Tech Hub Office</div>
-                    <div className="text-purple-600">4200 ETH • 6.8% yield • "office space"</div>
-                  </div>
-                  <div className="bg-orange-50 p-3 rounded border-l-4 border-orange-400">
-                    <div className="font-medium text-orange-800">#4 Seattle Warehouse District</div>
-                    <div className="text-orange-600">3100 ETH • 7.2% yield • "warehouse"</div>
-                  </div>
-                  <div className="bg-red-50 p-3 rounded border-l-4 border-red-400">
-                    <div className="font-medium text-red-800">#5 Denver Mountain Resort</div>
-                    <div className="text-red-600">5500 ETH • 8.1% yield • "resort"</div>
-                  </div>
-                  <div className="bg-indigo-50 p-3 rounded border-l-4 border-indigo-400">
-                    <div className="font-medium text-indigo-800">#6 Chicago Downtown Lofts</div>
-                    <div className="text-indigo-600">3200 ETH • 5.8% yield • "downtown lofts"</div>
-                  </div>
-                  <div className="bg-pink-50 p-3 rounded border-l-4 border-pink-400">
-                    <div className="font-medium text-pink-800">#7 Los Angeles Studio Complex</div>
-                    <div className="text-pink-600">6800 ETH • 6.5% yield • "studio complex"</div>
-                  </div>
-                  <div className="bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
-                    <div className="font-medium text-yellow-800">#8 Phoenix Retail Plaza</div>
-                    <div className="text-yellow-600">2800 ETH • 7.4% yield • "retail plaza"</div>
-                  </div>
-                  <div className="bg-teal-50 p-3 rounded border-l-4 border-teal-400">
-                    <div className="font-medium text-teal-800">#9 Boston Historic Brownstones</div>
-                    <div className="text-teal-600">4500 ETH • 4.8% yield • "brownstones"</div>
-                  </div>
-                  <div className="bg-cyan-50 p-3 rounded border-l-4 border-cyan-400">
-                    <div className="font-medium text-cyan-800">#10 Nashville Music District</div>
-                    <div className="text-cyan-600">3600 ETH • 6.2% yield • "music district"</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Smart Commands */}
-              <div className="grid md:grid-cols-5 gap-4 text-sm">
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">🤖 Smart Investment Commands:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• "Invest 5 ETH in the beachfront property"</li>
-                    <li>• "Put 10 ETH in downtown lofts with aggressive strategy"</li>
-                    <li>• "Buy shares in the music district"</li>
-                    <li>• "Invest in the studio complex"</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">📅 Scheduling & Automation:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• "Sell $1000 worth ETH daily and invest in brownstones"</li>
-                    <li>• "Swap 2 ETH to USDC weekly"</li>
-                    <li>• "Rebalance my portfolio monthly"</li>
-                    <li>• "Claim yield from all properties"</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">🚀 Advanced DeFi Features:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• "Stream 5 USDC/day to alice.base.eth"</li>
-                    <li>• "Stream 10 USD/2 hours to ales"</li>
-                    <li>• "Resolve alice.base.eth to address"</li>
-                    <li>• "Borrow 500 USDC against 1 WETH"</li>
-                    <li>• "Repay my 500 USDC loan"</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">🤖 Advanced Trading:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• "Keep my portfolio 60% Real Estate and 40% ETH"</li>
-                    <li>• "Copy every trade from nancy.base.eth"</li>
-                    <li>• "Buy ETH if price drops below $1500"</li>
-                    <li>• "Sell 2 ETH when price hits $4000"</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">🔐 EIP-7715 Strategies:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• "Turn on Auto-Compound for property 1"</li>
-                    <li>• "Invest $50 every Monday in property 2"</li>
-                    <li>• "Emergency sell if ETH drops below $1500"</li>
-                    <li>• "Execute yield farming for property 3"</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* EIP-7702 Permission Info */}
-            <div className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-purple-800 mb-2">🔐 Advanced Permission System</h3>
-              <p className="text-sm text-purple-700 mb-3">
-                This platform uses MetaMask Advanced Permissions (EIP-7702) for secure, automated RWA transactions 
-                with compliance controls and session key management.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">EIP-7702 Smart Accounts</span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">KYC/AML Compliance</span>
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs">Session Key Automation</span>
-                <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">Policy-Based Execution</span>
-              </div>
-            </div>
-
-            {/* AI Input */}
-            <div className="mb-8">
-              <AgentInput onActionParsed={handleActionParsed} />
-            </div>
-
-            {/* Action Confirmation */}
-            {parsedAction && (
-              <div className="mb-8">
-                <ActionCard 
-                  action={parsedAction} 
-                  onExecuted={handleActionExecuted}
+              {/* Search */}
+              <div style={{ position: 'relative' }}>
+                <Search style={{ 
+                  position: 'absolute', 
+                  left: '12px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  width: '16px', 
+                  height: '16px', 
+                  color: '#9ca3af' 
+                }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  style={{
+                    paddingLeft: '40px',
+                    paddingRight: '16px',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    width: '200px',
+                    background: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    fontSize: '0.875rem',
+                    outline: 'none',
+                  }}
                 />
               </div>
-            )}
 
-            {/* Action Log */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4">📋 Transaction Log</h2>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {actionLog.length === 0 ? (
-                  <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded">
-                    <p className="mb-3">🚀 <strong>Try these advanced AI commands:</strong></p>
-                    <div className="grid md:grid-cols-5 gap-4">
-                      <div>
-                        <p className="font-medium text-gray-700 mb-2">💰 Smart Investments:</p>
-                        <ul className="space-y-1 ml-4 text-xs">
-                          <li>• "Invest $25000 in the beachfront property with aggressive strategy"</li>
-                          <li>• "Put $10000 in the office space"</li>
-                          <li>• "Buy shares in the resort property"</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-700 mb-2">📅 Automated Trading:</p>
-                        <ul className="space-y-1 ml-4 text-xs">
-                          <li>• "Sell $1000 worth ETH daily and invest in this property"</li>
-                          <li>• "Swap $500 of USDC to ETH weekly"</li>
-                          <li>• "Rebalance my portfolio monthly"</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-700 mb-2">🚀 Advanced DeFi:</p>
-                        <ul className="space-y-1 ml-4 text-xs">
-                          <li>• "Stream 5 USDC/day to alice.base.eth"</li>
-                          <li>• "Stream 10 USD/2 hours to ales"</li>
-                          <li>• "Resolve alice.base.eth to address"</li>
-                          <li>• "Borrow 500 USDC against 1 WETH"</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-700 mb-2">🤖 Robo-Advisor:</p>
-                        <ul className="space-y-1 ml-4 text-xs">
-                          <li>• "Keep my portfolio 60% Real Estate and 40% ETH"</li>
-                          <li>• "Copy every trade from nancy.base.eth"</li>
-                          <li>• "Buy ETH if price drops below $1500"</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-700 mb-2">🔐 EIP-7715 Strategies:</p>
-                        <ul className="space-y-1 ml-4 text-xs">
-                          <li>• "Turn on Auto-Compound for property 1"</li>
-                          <li>• "Invest $50 every Monday in property 2"</li>
-                          <li>• "Emergency sell if ETH drops below $1500"</li>
-                        </ul>
-                      </div>
-                    </div>
+              <ConnectButton />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div style={{ 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        padding: '2rem 1rem',
+        minHeight: 'calc(100vh - 80px)', // Account for navigation height
+        width: '100%'
+      }}>
+        {/* Welcome Header */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h1 style={{ 
+            fontSize: '3rem', 
+            fontWeight: 'bold', 
+            color: 'white', 
+            marginBottom: '0.5rem',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            Welcome back, <span style={{ background: 'linear-gradient(45deg, #fbbf24, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Amanda</span> 👋
+          </h1>
+          <p style={{ fontSize: '1.125rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+            {loading ? 'Loading your portfolio...' : 
+             portfolioMetrics ? `Your portfolio is up ${portfolioMetrics.change24h.toFixed(1)}% today • ETH: $${portfolioMetrics.ethPrice.toLocaleString()}` :
+             'Your intelligent RWA portfolio dashboard'
+            }
+          </p>
+        </div>
+
+        {/* Portfolio Cards */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <div style={{ height: '16px', background: '#e5e7eb', borderRadius: '4px', width: '60%', marginBottom: '1rem' }}></div>
+                <div style={{ height: '32px', background: '#e5e7eb', borderRadius: '4px', width: '40%', marginBottom: '0.5rem' }}></div>
+                <div style={{ height: '12px', background: '#e5e7eb', borderRadius: '4px', width: '50%' }}></div>
+              </div>
+            ))
+          ) : portfolioMetrics ? (
+            [
+              {
+                title: 'Total Portfolio Value',
+                value: `${portfolioMetrics.totalValue.toFixed(2)} ETH`,
+                subtitle: portfolioMetrics.totalValueUSD,
+                change: portfolioMetrics.change24h,
+                icon: Wallet,
+                color: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+              },
+              {
+                title: 'Average Yield',
+                value: `${portfolioMetrics.avgYield.toFixed(1)}%`,
+                subtitle: 'Annual APY',
+                change: 2.3,
+                icon: TrendingUp,
+                color: 'linear-gradient(135deg, #10b981, #059669)',
+              },
+              {
+                title: 'Active Assets',
+                value: portfolioMetrics.activeAssets.toString(),
+                subtitle: 'RWA Properties',
+                change: 0,
+                icon: Building2,
+                color: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+              },
+              {
+                title: 'AI Strategies',
+                value: '3',
+                subtitle: 'Active automations',
+                change: 1,
+                icon: Zap,
+                color: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              },
+            ].map((metric, index) => (
+              <div
+                key={metric.title}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: metric.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <metric.icon style={{ width: '24px', height: '24px', color: 'white' }} />
                   </div>
-                ) : (
-                  actionLog.map((log, index) => (
-                    <div key={index} className="text-sm text-gray-700 p-3 bg-gray-50 rounded border-l-4 border-blue-200">
-                      {log}
+                  {metric.change !== 0 && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: metric.change > 0 ? '#059669' : '#dc2626'
+                    }}>
+                      <TrendingUp style={{ width: '16px', height: '16px' }} />
+                      <span>{metric.change > 0 ? '+' : ''}{metric.change.toFixed(1)}%</span>
                     </div>
-                  ))
+                  )}
+                </div>
+                <div>
+                  <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6b7280', marginBottom: '4px' }}>{metric.title}</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '4px' }}>{metric.value}</p>
+                  <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>{metric.subtitle}</p>
+                </div>
+              </div>
+            ))
+          ) : null}
+        </div>
+
+        {/* AI Chat Section */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '24px',
+          padding: '2rem',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          marginBottom: '2rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Brain style={{ width: '24px', height: '24px', color: 'white' }} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>PropChain AI Assistant</h3>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Ready to help manage your RWA portfolio</p>
+            </div>
+          </div>
+
+          <div style={{
+            background: '#f8fafc',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            marginBottom: '1rem',
+            border: '1px solid #e2e8f0',
+            maxHeight: '200px',
+            overflowY: 'auto'
+          }}>
+            {chatMessages.length === 0 ? (
+              <p style={{ color: '#475569', lineHeight: '1.6', margin: 0 }}>
+                Welcome to PropChain AI! I'm your intelligent DeFi assistant, ready to help you manage your Real World Asset portfolio. 
+                I can execute trades, set up automated strategies, and monitor your investments. What would you like to do today?
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {chatMessages.map((message, index) => (
+                  <div key={index} style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: '12px',
+                    background: message.role === 'user' ? '#3b82f6' : '#e2e8f0',
+                    color: message.role === 'user' ? 'white' : '#374151',
+                    alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '80%',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.4',
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {message.content}
+                  </div>
+                ))}
+                {isProcessing && (
+                  <div style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: '12px',
+                    background: '#e2e8f0',
+                    color: '#374151',
+                    alignSelf: 'flex-start',
+                    maxWidth: '80%',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.4',
+                    fontStyle: 'italic'
+                  }}>
+                    🤖 Processing your request...
+                  </div>
                 )}
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Technology Stack Info */}
-            <div className="mt-8 bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">🛠️ Technology Stack</h3>
-              <div className="grid md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">AI & Automation:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• Groq AI for natural language processing</li>
-                    <li>• OpenAI Function Calling</li>
-                    <li>• Intelligent portfolio optimization</li>
-                    <li>• Automated compliance checking</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">Blockchain & Permissions:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• Base Sepolia (EIP-7702 support)</li>
-                    <li>• MetaMask Advanced Permissions</li>
-                    <li>• Session key management</li>
-                    <li>• Policy-based execution</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">Advanced DeFi Protocols:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• Superfluid money streaming</li>
-                    <li>• Basenames ENS resolution</li>
-                    <li>• Aave V3 lending/borrowing</li>
-                    <li>• Real estate tokenization</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">Data & Analytics:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>• Envio real-time indexing</li>
-                    <li>• Property performance tracking</li>
-                    <li>• Yield distribution analytics</li>
-                    <li>• Multi-protocol monitoring</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            {[
+              'invest $1000 in property 1',
+              'stream 5 USDC/day to alice.base.eth',
+              'keep portfolio 60% real estate 40% ETH',
+              'activate emergency brake if ETH drops below $2000'
+            ].map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => setChatInput(suggestion)}
+                disabled={isProcessing}
+                style={{
+                  padding: '6px 12px',
+                  background: '#f3f4f6',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  color: '#374151',
+                  cursor: isProcessing ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: isProcessing ? 0.5 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!isProcessing) {
+                    e.currentTarget.style.background = '#e5e7eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isProcessing) {
+                    e.currentTarget.style.background = '#f3f4f6';
+                  }
+                }}
+              >
+                {suggestion.length > 30 ? suggestion.substring(0, 30) + '...' : suggestion}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <input
+              type="text"
+              placeholder="Try: 'invest $1000 in property 1' or 'stream 5 USDC/day to alice.base.eth'"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isProcessing}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                background: isProcessing ? '#f9fafb' : 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                fontSize: '0.875rem',
+                outline: 'none',
+                cursor: isProcessing ? 'not-allowed' : 'text'
+              }}
+            />
+            <button 
+              onClick={handleSendMessage}
+              disabled={!chatInput.trim() || isProcessing}
+              style={{
+                padding: '12px 24px',
+                background: (chatInput.trim() && !isProcessing)
+                  ? 'linear-gradient(135deg, #3b82f6, #6366f1)' 
+                  : '#e5e7eb',
+                color: (chatInput.trim() && !isProcessing) ? 'white' : '#9ca3af',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: '600',
+                cursor: (chatInput.trim() && !isProcessing) ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+            >
+              {isProcessing ? 'Processing...' : 'Send'}
+              {!isProcessing && <ArrowUpRight style={{ width: '16px', height: '16px' }} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem'
+        }}>
+          {[
+            { name: 'Auto-Rebalance', href: '/rebalance', color: 'linear-gradient(135deg, #3b82f6, #6366f1)' },
+            { name: 'Yield Farming', href: '/yield-farmer', color: 'linear-gradient(135deg, #10b981, #059669)' },
+            { name: 'Emergency Brake', href: '/emergency', color: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+            { name: 'Production RWA', href: '/production-rwa', color: 'linear-gradient(135deg, #8b5cf6, #6366f1)' },
+          ].map((action) => (
+            <Link
+              key={action.name}
+              href={action.href}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem 1.5rem',
+                background: action.color,
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '16px',
+                fontWeight: '600',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                transition: 'transform 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>{action.name}</span>
+              <ArrowUpRight style={{ width: '20px', height: '20px' }} />
+            </Link>
+          ))}
+        </div>
       </div>
-    </Layout>
-  )
+    </div>
+  );
 }
