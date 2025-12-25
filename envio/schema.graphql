@@ -5,6 +5,29 @@
 # RWA PROPERTY ENTITIES
 # ========================================
 
+type PropertyUpdate @entity {
+  id: ID!
+  propertyId: String!
+  propertyName: String!
+  pricePerShare: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type TransferTransaction @entity {
+  id: ID!
+  propertyId: String!
+  propertyName: String!
+  propertyAddress: String!
+  from: String!
+  to: String!
+  value: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
 type PropertyTransaction @entity {
   id: ID!
   propertyId: String!

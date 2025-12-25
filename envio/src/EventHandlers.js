@@ -3,22 +3,6 @@
  * Real-time indexing for all RWA properties + DeFi protocols
  */
 
-import {
-  ManhattanLuxuryApartments,
-  MiamiBeachCondos,
-  AustinTechHubOffice,
-  SeattleWarehouseDistrict,
-  DenverMountainResort,
-  ChicagoDowntownLofts,
-  LosAngelesStudioComplex,
-  PhoenixRetailPlaza,
-  BostonHistoricBrownstones,
-  NashvilleMusicDistrict,
-  UniswapV3Router,
-  SuperfluidHost,
-  AaveV3Pool,
-} from "generated";
-
 // ========================================
 // RWA PROPERTY EVENT HANDLERS
 // ========================================
@@ -522,6 +506,558 @@ AaveV3Pool.Repay.handler(async ({ event, context }) => {
   };
 
   context.LendingTransaction.set(entity);
+});
+
+// ========================================
+// TRANSFER EVENT HANDLERS FOR ALL PROPERTIES
+// ========================================
+
+// Manhattan Luxury Apartments Transfer
+ManhattanLuxuryApartments.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "1",
+    propertyName: "Manhattan Luxury Apartments",
+    propertyAddress: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Miami Beach Condos Transfer
+MiamiBeachCondos.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "2",
+    propertyName: "Miami Beach Condos",
+    propertyAddress: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Austin Tech Hub Office Transfer
+AustinTechHubOffice.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "3",
+    propertyName: "Austin Tech Hub Office",
+    propertyAddress: "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Seattle Warehouse District Transfer
+SeattleWarehouseDistrict.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "4",
+    propertyName: "Seattle Warehouse District",
+    propertyAddress: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Denver Mountain Resort Transfer
+DenverMountainResort.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "5",
+    propertyName: "Denver Mountain Resort",
+    propertyAddress: "0x603E1BD79259EbcbAaeD0c83eeC09cA0B89a5bcC",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Chicago Downtown Lofts Transfer
+ChicagoDowntownLofts.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "6",
+    propertyName: "Chicago Downtown Lofts",
+    propertyAddress: "0x86337dDaF2661A069D0DcB5D160585acC2d15E9a",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Los Angeles Studio Complex Transfer
+LosAngelesStudioComplex.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "7",
+    propertyName: "Los Angeles Studio Complex",
+    propertyAddress: "0x9CfA6D15c80Eb753C815079F2b32ddEFd562C3e4",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Phoenix Retail Plaza Transfer
+PhoenixRetailPlaza.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "8",
+    propertyName: "Phoenix Retail Plaza",
+    propertyAddress: "0x427f7c59ED72bCf26DfFc634FEF3034e00922DD8",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Boston Historic Brownstones Transfer
+BostonHistoricBrownstones.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "9",
+    propertyName: "Boston Historic Brownstones",
+    propertyAddress: "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// Nashville Music District Transfer
+NashvilleMusicDistrict.Transfer.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "10",
+    propertyName: "Nashville Music District",
+    propertyAddress: "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3",
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.TransferTransaction.set(entity);
+});
+
+// ========================================
+// SHARES WITHDRAWN EVENT HANDLERS
+// ========================================
+
+// Manhattan Luxury Apartments SharesWithdrawn
+ManhattanLuxuryApartments.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "1",
+    propertyName: "Manhattan Luxury Apartments",
+    propertyAddress: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "1", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Miami Beach Condos SharesWithdrawn
+MiamiBeachCondos.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "2",
+    propertyName: "Miami Beach Condos",
+    propertyAddress: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "2", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Austin Tech Hub Office SharesWithdrawn
+AustinTechHubOffice.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "3",
+    propertyName: "Austin Tech Hub Office",
+    propertyAddress: "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "3", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Seattle Warehouse District SharesWithdrawn
+SeattleWarehouseDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "4",
+    propertyName: "Seattle Warehouse District",
+    propertyAddress: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "4", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Denver Mountain Resort SharesWithdrawn
+DenverMountainResort.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "5",
+    propertyName: "Denver Mountain Resort",
+    propertyAddress: "0x603E1BD79259EbcbAaeD0c83eeC09cA0B89a5bcC",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "5", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Chicago Downtown Lofts SharesWithdrawn
+ChicagoDowntownLofts.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "6",
+    propertyName: "Chicago Downtown Lofts",
+    propertyAddress: "0x86337dDaF2661A069D0DcB5D160585acC2d15E9a",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "6", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Los Angeles Studio Complex SharesWithdrawn
+LosAngelesStudioComplex.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "7",
+    propertyName: "Los Angeles Studio Complex",
+    propertyAddress: "0x9CfA6D15c80Eb753C815079F2b32ddEFd562C3e4",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "7", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Phoenix Retail Plaza SharesWithdrawn
+PhoenixRetailPlaza.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "8",
+    propertyName: "Phoenix Retail Plaza",
+    propertyAddress: "0x427f7c59ED72bCf26DfFc634FEF3034e00922DD8",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "8", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Boston Historic Brownstones SharesWithdrawn
+BostonHistoricBrownstones.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "9",
+    propertyName: "Boston Historic Brownstones",
+    propertyAddress: "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "9", event.params.shares, event.params.amount, "withdraw");
+});
+
+// Nashville Music District SharesWithdrawn
+NashvilleMusicDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: "10",
+    propertyName: "Nashville Music District",
+    propertyAddress: "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3",
+    investor: event.params.investor,
+    shares: event.params.shares,
+    cost: event.params.amount,
+    amount: event.params.amount,
+    action: "withdraw",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyTransaction.set(entity);
+  await updateUserPortfolio(context, event.params.investor, "10", event.params.shares, event.params.amount, "withdraw");
+});
+
+// ========================================
+// PROPERTY UPDATED EVENT HANDLERS
+// ========================================
+
+// Manhattan Luxury Apartments PropertyUpdated
+ManhattanLuxuryApartments.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Miami Beach Condos PropertyUpdated
+MiamiBeachCondos.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Austin Tech Hub Office PropertyUpdated
+AustinTechHubOffice.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Seattle Warehouse District PropertyUpdated
+SeattleWarehouseDistrict.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Denver Mountain Resort PropertyUpdated
+DenverMountainResort.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Chicago Downtown Lofts PropertyUpdated
+ChicagoDowntownLofts.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Los Angeles Studio Complex PropertyUpdated
+LosAngelesStudioComplex.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Phoenix Retail Plaza PropertyUpdated
+PhoenixRetailPlaza.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Boston Historic Brownstones PropertyUpdated
+BostonHistoricBrownstones.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
+});
+
+// Nashville Music District PropertyUpdated
+NashvilleMusicDistrict.PropertyUpdated.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    propertyId: event.params.propertyId.toString(),
+    propertyName: event.params.name,
+    pricePerShare: event.params.pricePerShare,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.PropertyUpdate.set(entity);
 });
 
 // ========================================
