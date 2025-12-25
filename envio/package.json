@@ -1,5 +1,5 @@
 {
-  "name": "propchain-ai-indexer",
+  "name": "avana",
   "version": "1.0.0",
   "description": "Envio indexer for PropChain AI RWA platform",
   "main": "src/EventHandlers.ts",
