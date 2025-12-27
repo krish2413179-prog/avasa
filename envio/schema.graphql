@@ -2,6 +2,52 @@
 # Real-time GraphQL schema for instant portfolio queries
 
 # ========================================
+# RECURRING PAYMENTS ENTITIES
+# ========================================
+
+type PermissionGranted @entity {
+  id: ID!
+  user: String!
+  maxAmountPerPayment: BigInt!
+  maxTotalAmount: BigInt!
+  validUntil: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type PaymentSchedule @entity {
+  id: ID! # scheduleId from contract
+  payer: String!
+  recipient: String!
+  amount: BigInt!
+  interval: BigInt!
+  isActive: Boolean!
+  createdAt: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type PaymentExecution @entity {
+  id: ID!
+  scheduleId: String!
+  payer: String!
+  recipient: String!
+  amount: BigInt!
+  executedAt: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type PaymentCancellation @entity {
+  id: ID!
+  scheduleId: String!
+  cancelledAt: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# ========================================
 # RWA PROPERTY ENTITIES
 # ========================================
 

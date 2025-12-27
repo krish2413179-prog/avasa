@@ -106,6 +106,16 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # RecurringPayments Contract for automated payment tracking
+      - name: RecurringPayments
+        address: "0x61A929b5AdeB6408969bD2A7DC28ceb4714beb3f"
+        handler: src/EventHandlers.js
+        events:
+          - event: PermissionGranted(address indexed user, uint256 maxAmountPerPayment, uint256 maxTotalAmount, uint256 validUntil)
+          - event: PaymentScheduleCreated(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount, uint256 interval)
+          - event: PaymentExecuted(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount)
+          - event: PaymentScheduleCancelled(bytes32 indexed scheduleId)
+          
       # Uniswap V3 Router for DeFi tracking - TEMPORARILY DISABLED
       # - name: UniswapV3Router
       #   address: "0x2626664c2603336E57B271c5C0b26F421741e481" # Base Sepolia

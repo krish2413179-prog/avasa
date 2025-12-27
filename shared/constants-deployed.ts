@@ -1,6 +1,12 @@
 // Auto-generated contract addresses
 export const REAL_ESTATE_FACTORY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
+// Recurring Payments Contract (UPDATE THIS AFTER DEPLOYMENT)
+export const RECURRING_PAYMENTS_ADDRESS = "0x61A929b5AdeB6408969bD2A7DC28ceb4714beb3f"; // PLACEHOLDER - UPDATE AFTER DEPLOYMENT
+
+// Base Sepolia USDC Contract
+export const USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+
 export const REAL_ESTATE_PROPERTIES = {
   "1": {
     name: "Manhattan Luxury Apartments",
