@@ -23,14 +23,14 @@ type PaymentSchedule @entity {
   contractAddress: String!
   
   # Relations
-  executions: [PaymentExecution!]! @derivedFrom(field: "schedule")
+  executions: [PaymentExecution!]! @derivedFrom(field: "scheduleId")
   permissions: [PaymentPermission!]! @derivedFrom(field: "user")
 }
 
 # Individual Payment Executions
 type PaymentExecution @entity {
   id: ID! # txHash_logIndex
-  schedule: PaymentSchedule!
+  scheduleId: String!
   payer: String!
   recipient: String!
   amount: BigInt!
@@ -77,13 +77,13 @@ type SwapSchedule @entity {
   nextSwap: BigInt!
   
   # Relations
-  executions: [SwapExecution!]! @derivedFrom(field: "schedule")
+  executions: [SwapExecution!]! @derivedFrom(field: "scheduleId")
 }
 
 # Individual Swap Executions
 type SwapExecution @entity {
   id: ID! # txHash_logIndex
-  schedule: SwapSchedule
+  scheduleId: String # Optional for instant swaps
   user: String!
   usdcAmount: BigInt!
   ethAmount: BigInt!

@@ -82,7 +82,7 @@ AutoRecurringPayments.PaymentScheduleCreated.handler(async ({ event, context }) 
 AutoRecurringPayments.PaymentExecuted.handler(async ({ event, context }) => {
   const executionEntity = {
     id: `${event.transactionHash}_${event.logIndex}`,
-    schedule: event.params.scheduleId,
+    scheduleId: event.params.scheduleId,
     payer: event.params.payer,
     recipient: event.params.recipient,
     amount: event.params.amount,
@@ -188,7 +188,7 @@ SimpleSwapPool.SwapScheduleCreated.handler(async ({ event, context }) => {
 SimpleSwapPool.SwapExecuted.handler(async ({ event, context }) => {
   const executionEntity = {
     id: `${event.transactionHash}_${event.logIndex}`,
-    schedule: event.params.scheduleId,
+    scheduleId: event.params.scheduleId,
     user: event.params.user,
     usdcAmount: event.params.usdcAmount,
     ethAmount: event.params.ethAmount,
@@ -231,7 +231,7 @@ SimpleSwapPool.SwapExecuted.handler(async ({ event, context }) => {
 SimpleSwapPool.InstantSwap.handler(async ({ event, context }) => {
   const executionEntity = {
     id: `${event.transactionHash}_${event.logIndex}`,
-    schedule: null, // No schedule for instant swaps
+    scheduleId: null, // No schedule for instant swaps
     user: event.params.user,
     usdcAmount: event.params.usdcAmount,
     ethAmount: event.params.ethAmount,
