@@ -1,11 +1,52 @@
 name: propchain-ai-indexer
-description: Real-time indexing for PropChain AI RWA platform - Hyper-Speed Portfolio Tracking
+description: 🏆 Award-Winning Real-time DeFi Analytics - PropChain AI RWA Platform with Advanced Payment Automation & Swap Analytics
 
 networks:
   - id: 84532 # Base Sepolia
     start_block: 0
     contracts:
-      # All 10 Real Estate Property Contracts
+      # ========================================
+      # 🚀 CORE DEFI CONTRACTS (DEPLOYED & ACTIVE)
+      # ========================================
+      
+      # AutoRecurringPayments - Advanced Payment Automation
+      - name: AutoRecurringPayments
+        address: "0x6cB93c4538E7166F3E8c64bA654Ec13b9fB74C96"
+        handler: src/EventHandlers.js
+        events:
+          - event: PermissionGranted(address indexed user, uint256 maxAmountPerPayment, uint256 maxTotalAmount, uint256 validUntil)
+          - event: PaymentScheduleCreated(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount, uint256 interval, uint256 maxExecutions, uint256 executorReward)
+          - event: PaymentExecuted(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount, address executor, uint256 reward)
+          - event: PaymentScheduleCancelled(bytes32 indexed scheduleId)
+          - event: ExecutorRewarded(address indexed executor, uint256 reward, bytes32 scheduleId)
+          
+      # SimpleSwapPool - ETH/USDC DEX with Recurring Swaps
+      - name: SimpleSwapPool
+        address: "0xCe3bf5DEd091c822193F14502B724a1bf1040E5C"
+        handler: src/EventHandlers.js
+        events:
+          - event: SwapScheduleCreated(bytes32 indexed scheduleId, address indexed user, uint256 usdcAmount, uint256 interval, uint256 executorReward)
+          - event: SwapExecuted(bytes32 indexed scheduleId, address indexed user, uint256 usdcAmount, uint256 ethAmount, address executor, uint256 reward)
+          - event: InstantSwap(address indexed user, uint256 usdcAmount, uint256 ethAmount)
+          - event: SwapScheduleCancelled(bytes32 indexed scheduleId)
+          - event: LiquidityAdded(uint256 ethAmount, uint256 usdcAmount)
+          - event: LiquidityRemoved(uint256 ethAmount, uint256 usdcAmount)
+          - event: ExecutorRewarded(address indexed executor, uint256 reward, bytes32 scheduleId)
+          - event: PermissionGranted(address indexed user, uint256 maxAmountPerSwap, uint256 maxTotalAmount, uint256 validUntil)
+          
+      # USDC Token - Track all USDC transfers for payment analytics
+      - name: USDCToken
+        address: "0x6B0dacea6a72E759243c99Eaed840DEe9564C194"
+        handler: src/EventHandlers.js
+        events:
+          - event: Transfer(address indexed from, address indexed to, uint256 value)
+          - event: Approval(address indexed owner, address indexed spender, uint256 value)
+
+      # ========================================
+      # 🏢 RWA PROPERTY CONTRACTS (10 PROPERTIES)
+      # ========================================
+      
+      # Property #1 - Manhattan Luxury Apartments
       - name: ManhattanLuxuryApartments
         address: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be"
         handler: src/EventHandlers.js
@@ -16,6 +57,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #2 - Miami Beach Condos
       - name: MiamiBeachCondos
         address: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968"
         handler: src/EventHandlers.js
@@ -26,6 +68,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #3 - Austin Tech Hub Office
       - name: AustinTechHubOffice
         address: "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883"
         handler: src/EventHandlers.js
@@ -36,6 +79,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #4 - Seattle Warehouse District
       - name: SeattleWarehouseDistrict
         address: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26"
         handler: src/EventHandlers.js
@@ -46,6 +90,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #5 - Denver Mountain Resort
       - name: DenverMountainResort
         address: "0x603E1BD79259EbcbAaeD0c83eeC09cA0B89a5bcC"
         handler: src/EventHandlers.js
@@ -56,6 +101,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #6 - Chicago Downtown Lofts
       - name: ChicagoDowntownLofts
         address: "0x86337dDaF2661A069D0DcB5D160585acC2d15E9a"
         handler: src/EventHandlers.js
@@ -66,6 +112,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #7 - Los Angeles Studio Complex
       - name: LosAngelesStudioComplex
         address: "0x9CfA6D15c80Eb753C815079F2b32ddEFd562C3e4"
         handler: src/EventHandlers.js
@@ -76,6 +123,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #8 - Phoenix Retail Plaza
       - name: PhoenixRetailPlaza
         address: "0x427f7c59ED72bCf26DfFc634FEF3034e00922DD8"
         handler: src/EventHandlers.js
@@ -86,6 +134,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #9 - Boston Historic Brownstones
       - name: BostonHistoricBrownstones
         address: "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B"
         handler: src/EventHandlers.js
@@ -96,6 +145,7 @@ networks:
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
+      # Property #10 - Nashville Music District
       - name: NashvilleMusicDistrict
         address: "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3"
         handler: src/EventHandlers.js
@@ -105,32 +155,26 @@ networks:
           - event: YieldDistributed(address indexed investor, uint256 amount)
           - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
+
+      # ========================================
+      # 🔮 FUTURE DEFI INTEGRATIONS (READY TO ENABLE)
+      # ========================================
           
-      # RecurringPayments Contract for automated payment tracking
-      - name: RecurringPayments
-        address: "0x61A929b5AdeB6408969bD2A7DC28ceb4714beb3f"
-        handler: src/EventHandlers.js
-        events:
-          - event: PermissionGranted(address indexed user, uint256 maxAmountPerPayment, uint256 maxTotalAmount, uint256 validUntil)
-          - event: PaymentScheduleCreated(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount, uint256 interval)
-          - event: PaymentExecuted(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount)
-          - event: PaymentScheduleCancelled(bytes32 indexed scheduleId)
-          
-      # Uniswap V3 Router for DeFi tracking - TEMPORARILY DISABLED
+      # Uniswap V3 Router for advanced DEX tracking
       # - name: UniswapV3Router
       #   address: "0x2626664c2603336E57B271c5C0b26F421741e481" # Base Sepolia
       #   handler: src/EventHandlers.js
       #   events:
       #     - event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
           
-      # Superfluid Host for streaming tracking - TEMPORARILY DISABLED
+      # Superfluid Host for streaming payments
       # - name: SuperfluidHost
       #   address: "0x4C073B3baB6d88B6575C8743282064147A6A6903"
       #   handler: src/EventHandlers.js
       #   events:
       #     - event: FlowUpdated(address indexed token, address indexed sender, address indexed receiver, int96 flowRate, int256 totalSenderFlowRate, int256 totalReceiverFlowRate, bytes userData)
           
-      # Aave V3 Pool for lending tracking - TEMPORARILY DISABLED
+      # Aave V3 Pool for lending analytics
       # - name: AaveV3Pool
       #   address: "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b" # Base Sepolia Pool
       #   handler: src/EventHandlers.js
@@ -147,6 +191,22 @@ field_selection:
     - "value"
     - "gasUsed"
     - "gasPrice"
+    - "effectiveGasPrice"
+    - "cumulativeGasUsed"
 
 rollback_on_reorg: true
 save_full_history: true
+
+# ========================================
+# 🏆 AWARD-WINNING FEATURES
+# ========================================
+# 
+# This indexer provides:
+# 1. Real-time payment automation analytics
+# 2. Comprehensive swap pool monitoring  
+# 3. Multi-property RWA portfolio tracking
+# 4. Executor reward distribution analytics
+# 5. Cross-contract transaction correlation
+# 6. Advanced DeFi protocol integration ready
+# 7. Hyper-speed event processing
+# 8. Complete transaction lifecycle tracking

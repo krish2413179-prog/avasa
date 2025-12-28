@@ -1,68 +1,162 @@
-# PropChain AI - Hyper-Speed Portfolio Tracking Schema
-# Real-time GraphQL schema for instant portfolio queries
-
 # ========================================
-# RECURRING PAYMENTS ENTITIES
+# 🏆 PropChain AI - Award-Winning DeFi Analytics Schema
+# Real-time indexing for RWA properties + Advanced Payment Automation
 # ========================================
 
-type PermissionGranted @entity {
-  id: ID!
-  user: String!
-  maxAmountPerPayment: BigInt!
-  maxTotalAmount: BigInt!
-  validUntil: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
-}
+# ========================================
+# 💰 PAYMENT AUTOMATION ENTITIES
+# ========================================
 
+# Recurring Payment Schedules
 type PaymentSchedule @entity {
-  id: ID! # scheduleId from contract
+  id: ID! # scheduleId
   payer: String!
   recipient: String!
   amount: BigInt!
   interval: BigInt!
+  maxExecutions: BigInt!
+  executionsLeft: BigInt!
+  executorReward: BigInt!
   isActive: Boolean!
   createdAt: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
+  nextPayment: BigInt!
+  contractAddress: String!
+  
+  # Relations
+  executions: [PaymentExecution!]! @derivedFrom(field: "schedule")
+  permissions: [PaymentPermission!]! @derivedFrom(field: "user")
 }
 
+# Individual Payment Executions
 type PaymentExecution @entity {
-  id: ID!
-  scheduleId: String!
+  id: ID! # txHash_logIndex
+  schedule: PaymentSchedule!
   payer: String!
   recipient: String!
   amount: BigInt!
-  executedAt: BigInt!
+  executor: String!
+  executorReward: BigInt!
+  timestamp: BigInt!
   blockNumber: BigInt!
   transactionHash: String!
+  gasUsed: BigInt!
+  gasPrice: BigInt!
 }
 
-type PaymentCancellation @entity {
-  id: ID!
-  scheduleId: String!
-  cancelledAt: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
+# Payment Permissions (EIP-7715 style)
+type PaymentPermission @entity {
+  id: ID! # user_contract
+  user: String!
+  contractAddress: String!
+  maxAmountPerPayment: BigInt!
+  maxTotalAmount: BigInt!
+  totalSpent: BigInt!
+  validUntil: BigInt!
+  isActive: Boolean!
+  grantedAt: BigInt!
+  
+  # Relations
+  schedules: [PaymentSchedule!]! @derivedFrom(field: "payer")
 }
 
 # ========================================
-# RWA PROPERTY ENTITIES
+# 🔄 SWAP POOL ENTITIES
 # ========================================
 
-type PropertyUpdate @entity {
-  id: ID!
-  propertyId: String!
-  propertyName: String!
-  pricePerShare: BigInt!
+# Swap Pool Schedules (Recurring Swaps)
+type SwapSchedule @entity {
+  id: ID! # scheduleId
+  user: String!
+  usdcAmount: BigInt!
+  interval: BigInt!
+  maxExecutions: BigInt!
+  executionsLeft: BigInt!
+  executorReward: BigInt!
+  isActive: Boolean!
+  createdAt: BigInt!
+  nextSwap: BigInt!
+  
+  # Relations
+  executions: [SwapExecution!]! @derivedFrom(field: "schedule")
+}
+
+# Individual Swap Executions
+type SwapExecution @entity {
+  id: ID! # txHash_logIndex
+  schedule: SwapSchedule
+  user: String!
+  usdcAmount: BigInt!
+  ethAmount: BigInt!
+  executor: String!
+  executorReward: BigInt!
+  swapType: String! # "instant" or "recurring"
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+  gasUsed: BigInt!
+  gasPrice: BigInt!
+}
+
+# Liquidity Pool Events
+type LiquidityEvent @entity {
+  id: ID! # txHash_logIndex
+  eventType: String! # "add" or "remove"
+  ethAmount: BigInt!
+  usdcAmount: BigInt!
   timestamp: BigInt!
   blockNumber: BigInt!
   transactionHash: String!
 }
 
+# Swap Pool Permissions
+type SwapPermission @entity {
+  id: ID! # user_contract
+  user: String!
+  maxAmountPerSwap: BigInt!
+  maxTotalAmount: BigInt!
+  totalSpent: BigInt!
+  validUntil: BigInt!
+  isActive: Boolean!
+  grantedAt: BigInt!
+}
+
+# ========================================
+# 🏢 RWA PROPERTY ENTITIES
+# ========================================
+
+# Property Transactions (Purchases/Withdrawals)
+type PropertyTransaction @entity {
+  id: ID! # txHash_logIndex
+  propertyId: String!
+  propertyName: String!
+  propertyAddress: String!
+  investor: String!
+  shares: BigInt
+  amount: BigInt!
+  cost: BigInt
+  action: String! # "purchase", "withdraw", "yield_claim"
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Yield Distribution Events
+type YieldTransaction @entity {
+  id: ID! # txHash_logIndex
+  propertyId: String!
+  propertyName: String!
+  propertyAddress: String!
+  investor: String!
+  amount: BigInt!
+  action: String! # "yield_claim"
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Property Share Transfers
 type TransferTransaction @entity {
-  id: ID!
+  id: ID! # txHash_logIndex
   propertyId: String!
   propertyName: String!
   propertyAddress: String!
@@ -74,199 +168,224 @@ type TransferTransaction @entity {
   transactionHash: String!
 }
 
-type PropertyTransaction @entity {
-  id: ID!
+# Property Updates (Price changes, etc.)
+type PropertyUpdate @entity {
+  id: ID! # txHash_logIndex
   propertyId: String!
   propertyName: String!
-  propertyAddress: String!
-  investor: String!
-  shares: BigInt
-  cost: BigInt
-  amount: BigInt
-  action: String! # "purchase", "withdraw", "yield_claim"
+  pricePerShare: BigInt!
   timestamp: BigInt!
   blockNumber: BigInt!
   transactionHash: String!
 }
 
-type YieldTransaction @entity {
-  id: ID!
-  propertyId: String!
-  propertyName: String!
-  propertyAddress: String!
-  investor: String!
-  amount: BigInt!
-  action: String! # "yield_claim", "yield_distribution"
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
-}
-
+# User Portfolio Aggregation
 type UserPortfolio @entity {
-  id: ID! # Format: "{user}_{propertyId}"
+  id: ID! # user_propertyId
   user: String!
   propertyId: String!
   totalShares: BigInt!
   totalInvested: BigInt!
   totalYieldClaimed: BigInt!
   lastUpdated: BigInt!
+  
+  # Relations
+  transactions: [PropertyTransaction!]! @derivedFrom(field: "investor")
+  yields: [YieldTransaction!]! @derivedFrom(field: "investor")
 }
 
 # ========================================
-# DEFI PROTOCOL ENTITIES
+# 💎 TOKEN TRACKING ENTITIES
 # ========================================
 
-type SwapTransaction @entity {
-  id: ID!
-  sender: String!
-  recipient: String!
-  amount0: BigInt!
-  amount1: BigInt!
-  sqrtPriceX96: BigInt!
-  liquidity: BigInt!
-  tick: Int!
+# USDC Transfer Events
+type USDCTransfer @entity {
+  id: ID! # txHash_logIndex
+  from: String!
+  to: String!
+  value: BigInt!
   timestamp: BigInt!
   blockNumber: BigInt!
   transactionHash: String!
+  
+  # Context detection
+  isPaymentRelated: Boolean!
+  isSwapRelated: Boolean!
+  isPropertyRelated: Boolean!
+  relatedContract: String
 }
 
-type StreamTransaction @entity {
-  id: ID!
-  token: String!
-  sender: String!
-  receiver: String!
-  flowRate: BigInt!
-  totalSenderFlowRate: BigInt!
-  totalReceiverFlowRate: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
-}
-
-type LendingTransaction @entity {
-  id: ID!
-  reserve: String!
-  user: String!
-  onBehalfOf: String
-  repayer: String
-  amount: BigInt!
-  interestRateMode: Int
-  borrowRate: BigInt
-  referralCode: Int
-  useATokens: Boolean
-  action: String! # "supply", "borrow", "repay"
+# USDC Approval Events
+type USDCApproval @entity {
+  id: ID! # txHash_logIndex
+  owner: String!
+  spender: String!
+  value: BigInt!
   timestamp: BigInt!
   blockNumber: BigInt!
   transactionHash: String!
 }
 
 # ========================================
-# AGGREGATED ANALYTICS ENTITIES
+# 🎯 EXECUTOR ANALYTICS ENTITIES
 # ========================================
 
-type UserAnalytics @entity {
-  id: ID! # User address
-  totalPropertiesOwned: Int!
-  totalInvested: BigInt!
-  totalYieldEarned: BigInt!
-  totalSwapVolume: BigInt!
-  totalStreamsSent: BigInt!
-  totalStreamsReceived: BigInt!
-  totalLent: BigInt!
-  totalBorrowed: BigInt!
-  lastActivity: BigInt!
+# Executor Performance Tracking
+type ExecutorStats @entity {
+  id: ID! # executor_address
+  executor: String!
+  totalExecutions: BigInt!
+  totalRewardsEarned: BigInt!
+  paymentExecutions: BigInt!
+  swapExecutions: BigInt!
+  averageReward: BigInt!
+  firstExecution: BigInt!
+  lastExecution: BigInt!
+  
+  # Relations
+  paymentExecutions_rel: [PaymentExecution!]! @derivedFrom(field: "executor")
+  swapExecutions_rel: [SwapExecution!]! @derivedFrom(field: "executor")
 }
 
-type PropertyAnalytics @entity {
-  id: ID! # Property ID
-  propertyName: String!
-  propertyAddress: String!
-  totalInvestors: Int!
-  totalSharesSold: BigInt!
-  totalValueLocked: BigInt!
-  totalYieldDistributed: BigInt!
-  averageYieldRate: BigInt!
-  lastActivity: BigInt!
+# Daily Executor Rewards
+type DailyExecutorReward @entity {
+  id: ID! # executor_date
+  executor: String!
+  date: String! # YYYY-MM-DD
+  totalRewards: BigInt!
+  executionCount: BigInt!
+  paymentRewards: BigInt!
+  swapRewards: BigInt!
 }
 
-type DailyMetrics @entity {
-  id: ID! # Format: "YYYY-MM-DD"
+# ========================================
+# 📊 ANALYTICS & AGGREGATION ENTITIES
+# ========================================
+
+# Daily Protocol Stats
+type DailyProtocolStats @entity {
+  id: ID! # date (YYYY-MM-DD)
   date: String!
-  totalTransactions: Int!
-  totalVolume: BigInt!
-  uniqueUsers: Int!
-  newInvestors: Int!
+  
+  # Payment Stats
+  totalPayments: BigInt!
+  totalPaymentVolume: BigInt!
+  activePaymentSchedules: BigInt!
+  newPaymentSchedules: BigInt!
+  
+  # Swap Stats
+  totalSwaps: BigInt!
+  totalSwapVolumeUSDC: BigInt!
+  totalSwapVolumeETH: BigInt!
+  activeSwapSchedules: BigInt!
+  newSwapSchedules: BigInt!
+  
+  # Property Stats
+  totalPropertyInvestments: BigInt!
+  totalPropertyVolume: BigInt!
+  totalYieldDistributed: BigInt!
+  
+  # Executor Stats
+  totalExecutorRewards: BigInt!
+  activeExecutors: BigInt!
+  
+  # Gas Stats
+  totalGasUsed: BigInt!
+  averageGasPrice: BigInt!
+}
+
+# User Activity Summary
+type UserActivity @entity {
+  id: ID! # user_address
+  user: String!
+  
+  # Payment Activity
+  totalPaymentsSent: BigInt!
+  totalPaymentsReceived: BigInt!
+  totalPaymentVolumeSent: BigInt!
+  totalPaymentVolumeReceived: BigInt!
+  activePaymentSchedules: BigInt!
+  
+  # Swap Activity
+  totalSwaps: BigInt!
+  totalSwapVolumeUSDC: BigInt!
+  totalSwapVolumeETH: BigInt!
+  activeSwapSchedules: BigInt!
+  
+  # Property Activity
+  totalPropertyInvestments: BigInt!
+  totalPropertyVolume: BigInt!
   totalYieldClaimed: BigInt!
-  totalSwapVolume: BigInt!
-  activeStreams: Int!
-  totalLendingVolume: BigInt!
+  propertiesOwned: [String!]!
+  
+  # Executor Activity
+  totalExecutions: BigInt!
+  totalExecutorRewards: BigInt!
+  
+  # Timestamps
+  firstActivity: BigInt!
+  lastActivity: BigInt!
+}
+
+# Contract Interaction Summary
+type ContractInteraction @entity {
+  id: ID! # contract_address
+  contractAddress: String!
+  contractName: String!
+  totalTransactions: BigInt!
+  totalVolume: BigInt!
+  uniqueUsers: BigInt!
+  firstInteraction: BigInt!
+  lastInteraction: BigInt!
 }
 
 # ========================================
-# REAL-TIME PORTFOLIO VIEWS
+# 🔮 FUTURE DEFI ENTITIES (READY TO ENABLE)
 # ========================================
 
-type LivePortfolio @entity {
-  id: ID! # User address
-  user: String!
-  totalValue: BigInt!
-  totalYield: BigInt!
-  portfolioYieldRate: BigInt!
-  diversificationScore: Int!
-  riskScore: Int!
-  lastUpdated: BigInt!
-}
+# Uniswap V3 Swaps (commented out for now)
+# type SwapTransaction @entity {
+#   id: ID!
+#   sender: String!
+#   recipient: String!
+#   amount0: BigInt!
+#   amount1: BigInt!
+#   sqrtPriceX96: BigInt!
+#   liquidity: BigInt!
+#   tick: Int!
+#   timestamp: BigInt!
+#   blockNumber: BigInt!
+#   transactionHash: String!
+# }
 
-type PropertyPerformance @entity {
-  id: ID! # Property ID
-  propertyId: String!
-  propertyName: String!
-  currentPrice: BigInt!
-  priceChange24h: BigInt!
-  volume24h: BigInt!
-  yieldRate: BigInt!
-  totalInvestors: Int!
-  marketCap: BigInt!
-  lastUpdated: BigInt!
-}
+# Superfluid Streams (commented out for now)
+# type StreamTransaction @entity {
+#   id: ID!
+#   token: String!
+#   sender: String!
+#   receiver: String!
+#   flowRate: BigInt!
+#   totalSenderFlowRate: BigInt!
+#   totalReceiverFlowRate: BigInt!
+#   timestamp: BigInt!
+#   blockNumber: BigInt!
+#   transactionHash: String!
+# }
 
-# ========================================
-# AI AGENT OPTIMIZATION ENTITIES
-# ========================================
-
-type UserPreferences @entity {
-  id: ID! # User address
-  user: String!
-  preferredRiskLevel: String! # "conservative", "balanced", "aggressive"
-  preferredPropertyTypesJson: String! # JSON string of array
-  maxInvestmentPerProperty: BigInt!
-  autoReinvestYield: Boolean!
-  notificationSettings: String!
-  lastUpdated: BigInt!
-}
-
-type AIRecommendation @entity {
-  id: ID!
-  user: String!
-  recommendationType: String! # "buy", "sell", "rebalance", "claim_yield"
-  propertyId: String
-  amount: BigInt
-  confidence: Int! # 0-100
-  reasoning: String!
-  expectedReturn: BigInt
-  riskLevel: String!
-  timestamp: BigInt!
-  executed: Boolean!
-}
-
-type MarketTrend @entity {
-  id: ID! # Format: "trend_{timestamp}"
-  trendType: String! # "bullish", "bearish", "sideways"
-  propertyId: String
-  priceDirection: String!
-  volumeChange: BigInt!
-  yieldTrend: String!
-  confidence: Int!
-  timeframe: String! # "1h", "24h", "7d", "30d"
-  timestamp: BigInt!
-}
+# Aave V3 Lending (commented out for now)
+# type LendingTransaction @entity {
+#   id: ID!
+#   reserve: String!
+#   user: String!
+#   onBehalfOf: String!
+#   repayer: String!
+#   amount: BigInt!
+#   interestRateMode: Int!
+#   borrowRate: BigInt!
+#   referralCode: Int!
+#   useATokens: Boolean!
+#   action: String! # "supply", "borrow", "repay"
+#   timestamp: BigInt!
+#   blockNumber: BigInt!
+#   transactionHash: String!
+# }

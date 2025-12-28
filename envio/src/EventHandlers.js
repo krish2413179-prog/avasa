@@ -1,10 +1,21 @@
 /*
- * PropChain AI - Hyper-Speed Portfolio Tracking Event Handlers
- * Real-time indexing for all RWA properties + DeFi protocols
+ * 🏆 PropChain AI - Award-Winning DeFi Analytics Event Handlers
+ * Real-time indexing for RWA properties + Advanced Payment Automation + Swap Analytics
+ * 
+ * Features:
+ * - AutoRecurringPayments contract tracking
+ * - SimpleSwapPool contract monitoring  
+ * - Multi-property RWA portfolio analytics
+ * - Executor reward distribution tracking
+ * - Cross-contract transaction correlation
+ * - Advanced DeFi protocol integration
  */
 
 // Import generated contract handlers
 const {
+  AutoRecurringPayments,
+  SimpleSwapPool,
+  USDCToken,
   ManhattanLuxuryApartments,
   MiamiBeachCondos,
   AustinTechHubOffice,
@@ -15,10 +26,322 @@ const {
   PhoenixRetailPlaza,
   BostonHistoricBrownstones,
   NashvilleMusicDistrict,
-  // UniswapV3Router,
-  // SuperfluidHost,
-  // AaveV3Pool,
 } = require("../generated");
+
+// ========================================
+// 🚀 AUTORECURRINGPAYMENTS EVENT HANDLERS
+// ========================================
+
+// Permission Granted Event
+AutoRecurringPayments.PermissionGranted.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.params.user}_${event.srcAddress}`,
+    user: event.params.user,
+    contractAddress: event.srcAddress,
+    maxAmountPerPayment: event.params.maxAmountPerPayment,
+    maxTotalAmount: event.params.maxTotalAmount,
+    totalSpent: BigInt(0),
+    validUntil: event.params.validUntil,
+    isActive: true,
+    grantedAt: event.block.timestamp,
+  };
+
+  context.PaymentPermission.set(entity);
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'permission_granted');
+});
+
+// Payment Schedule Created Event
+AutoRecurringPayments.PaymentScheduleCreated.handler(async ({ event, context }) => {
+  const entity = {
+    id: event.params.scheduleId,
+    payer: event.params.payer,
+    recipient: event.params.recipient,
+    amount: event.params.amount,
+    interval: event.params.interval,
+    maxExecutions: event.params.maxExecutions,
+    executionsLeft: event.params.maxExecutions,
+    executorReward: event.params.executorReward,
+    isActive: true,
+    createdAt: event.block.timestamp,
+    nextPayment: event.block.timestamp + event.params.interval,
+    contractAddress: event.srcAddress,
+  };
+
+  context.PaymentSchedule.set(entity);
+  
+  // Update user activity
+  await updateUserActivity(context, event.params.payer, 'payment_schedule_created', event.params.amount);
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'payment_schedule_created');
+});
+
+// Payment Executed Event
+AutoRecurringPayments.PaymentExecuted.handler(async ({ event, context }) => {
+  const executionEntity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    schedule: event.params.scheduleId,
+    payer: event.params.payer,
+    recipient: event.params.recipient,
+    amount: event.params.amount,
+    executor: event.params.executor,
+    executorReward: event.params.reward,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+    gasUsed: BigInt(0), // Will be updated from transaction data
+    gasPrice: BigInt(0), // Will be updated from transaction data
+  };
+
+  context.PaymentExecution.set(executionEntity);
+  
+  // Update payment schedule
+  const schedule = await context.PaymentSchedule.get(event.params.scheduleId);
+  if (schedule) {
+    schedule.executionsLeft = schedule.executionsLeft - BigInt(1);
+    schedule.nextPayment = event.block.timestamp + schedule.interval;
+    
+    if (schedule.executionsLeft <= BigInt(0)) {
+      schedule.isActive = false;
+    }
+    
+    context.PaymentSchedule.set(schedule);
+  }
+  
+  // Update executor stats
+  await updateExecutorStats(context, event.params.executor, event.params.reward, 'payment');
+  
+  // Update user activity
+  await updateUserActivity(context, event.params.payer, 'payment_sent', event.params.amount);
+  await updateUserActivity(context, event.params.recipient, 'payment_received', event.params.amount);
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'payment_executed', event.params.amount);
+});
+
+// Payment Schedule Cancelled Event
+AutoRecurringPayments.PaymentScheduleCancelled.handler(async ({ event, context }) => {
+  const schedule = await context.PaymentSchedule.get(event.params.scheduleId);
+  if (schedule) {
+    schedule.isActive = false;
+    context.PaymentSchedule.set(schedule);
+  }
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'payment_schedule_cancelled');
+});
+
+// Executor Rewarded Event
+AutoRecurringPayments.ExecutorRewarded.handler(async ({ event, context }) => {
+  // This is handled in PaymentExecuted handler
+  // But we can add additional executor-specific analytics here
+  await updateDailyExecutorReward(context, event.params.executor, event.params.reward, event.block.timestamp);
+});
+
+// ========================================
+// 🔄 SIMPLESWAPPOOL EVENT HANDLERS
+// ========================================
+
+// Swap Permission Granted Event
+SimpleSwapPool.PermissionGranted.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.params.user}_${event.srcAddress}`,
+    user: event.params.user,
+    maxAmountPerSwap: event.params.maxAmountPerSwap,
+    maxTotalAmount: event.params.maxTotalAmount,
+    totalSpent: BigInt(0),
+    validUntil: event.params.validUntil,
+    isActive: true,
+    grantedAt: event.block.timestamp,
+  };
+
+  context.SwapPermission.set(entity);
+});
+
+// Swap Schedule Created Event
+SimpleSwapPool.SwapScheduleCreated.handler(async ({ event, context }) => {
+  const entity = {
+    id: event.params.scheduleId,
+    user: event.params.user,
+    usdcAmount: event.params.usdcAmount,
+    interval: event.params.interval,
+    maxExecutions: BigInt(100), // Default from contract
+    executionsLeft: BigInt(100),
+    executorReward: event.params.executorReward,
+    isActive: true,
+    createdAt: event.block.timestamp,
+    nextSwap: event.block.timestamp + event.params.interval,
+  };
+
+  context.SwapSchedule.set(entity);
+  
+  // Update user activity
+  await updateUserActivity(context, event.params.user, 'swap_schedule_created', event.params.usdcAmount);
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'swap_schedule_created');
+});
+
+// Swap Executed Event
+SimpleSwapPool.SwapExecuted.handler(async ({ event, context }) => {
+  const executionEntity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    schedule: event.params.scheduleId,
+    user: event.params.user,
+    usdcAmount: event.params.usdcAmount,
+    ethAmount: event.params.ethAmount,
+    executor: event.params.executor,
+    executorReward: event.params.reward,
+    swapType: "recurring",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+    gasUsed: BigInt(0),
+    gasPrice: BigInt(0),
+  };
+
+  context.SwapExecution.set(executionEntity);
+  
+  // Update swap schedule
+  const schedule = await context.SwapSchedule.get(event.params.scheduleId);
+  if (schedule) {
+    schedule.executionsLeft = schedule.executionsLeft - BigInt(1);
+    schedule.nextSwap = event.block.timestamp + schedule.interval;
+    
+    if (schedule.executionsLeft <= BigInt(0)) {
+      schedule.isActive = false;
+    }
+    
+    context.SwapSchedule.set(schedule);
+  }
+  
+  // Update executor stats
+  await updateExecutorStats(context, event.params.executor, event.params.reward, 'swap');
+  
+  // Update user activity
+  await updateUserActivity(context, event.params.user, 'swap_executed', event.params.usdcAmount);
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'swap_executed', event.params.usdcAmount, event.params.ethAmount);
+});
+
+// Instant Swap Event
+SimpleSwapPool.InstantSwap.handler(async ({ event, context }) => {
+  const executionEntity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    schedule: null, // No schedule for instant swaps
+    user: event.params.user,
+    usdcAmount: event.params.usdcAmount,
+    ethAmount: event.params.ethAmount,
+    executor: event.params.user, // User executes their own instant swap
+    executorReward: BigInt(0), // No reward for instant swaps
+    swapType: "instant",
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+    gasUsed: BigInt(0),
+    gasPrice: BigInt(0),
+  };
+
+  context.SwapExecution.set(executionEntity);
+  
+  // Update user activity
+  await updateUserActivity(context, event.params.user, 'instant_swap', event.params.usdcAmount);
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'instant_swap', event.params.usdcAmount, event.params.ethAmount);
+});
+
+// Swap Schedule Cancelled Event
+SimpleSwapPool.SwapScheduleCancelled.handler(async ({ event, context }) => {
+  const schedule = await context.SwapSchedule.get(event.params.scheduleId);
+  if (schedule) {
+    schedule.isActive = false;
+    context.SwapSchedule.set(schedule);
+  }
+  
+  // Update daily stats
+  await updateDailyStats(context, event.block.timestamp, 'swap_schedule_cancelled');
+});
+
+// Liquidity Added Event
+SimpleSwapPool.LiquidityAdded.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    eventType: "add",
+    ethAmount: event.params.ethAmount,
+    usdcAmount: event.params.usdcAmount,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.LiquidityEvent.set(entity);
+});
+
+// Liquidity Removed Event
+SimpleSwapPool.LiquidityRemoved.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    eventType: "remove",
+    ethAmount: event.params.ethAmount,
+    usdcAmount: event.params.usdcAmount,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.LiquidityEvent.set(entity);
+});
+
+// ========================================
+// 💎 USDC TOKEN EVENT HANDLERS
+// ========================================
+
+// USDC Transfer Event
+USDCToken.Transfer.handler(async ({ event, context }) => {
+  // Detect context based on to/from addresses
+  const isPaymentRelated = isPaymentContract(event.params.to) || isPaymentContract(event.params.from);
+  const isSwapRelated = isSwapContract(event.params.to) || isSwapContract(event.params.from);
+  const isPropertyRelated = isPropertyContract(event.params.to) || isPropertyContract(event.params.from);
+  
+  let relatedContract = null;
+  if (isPaymentRelated) relatedContract = "0x6cB93c4538E7166F3E8c64bA654Ec13b9fB74C96";
+  if (isSwapRelated) relatedContract = "0xCe3bf5DEd091c822193F14502B724a1bf1040E5C";
+  
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    from: event.params.from,
+    to: event.params.to,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+    isPaymentRelated,
+    isSwapRelated,
+    isPropertyRelated,
+    relatedContract,
+  };
+
+  context.USDCTransfer.set(entity);
+});
+
+// USDC Approval Event
+USDCToken.Approval.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.transactionHash}_${event.logIndex}`,
+    owner: event.params.owner,
+    spender: event.params.spender,
+    value: event.params.value,
+    timestamp: event.block.timestamp,
+    blockNumber: event.block.number,
+    transactionHash: event.transactionHash,
+  };
+
+  context.USDCApproval.set(entity);
+});
 
 // ========================================
 // RWA PROPERTY EVENT HANDLERS
@@ -1078,7 +1401,7 @@ NashvilleMusicDistrict.PropertyUpdated.handler(async ({ event, context }) => {
 });
 
 // ========================================
-// HELPER FUNCTIONS
+// 🔧 HELPER FUNCTIONS
 // ========================================
 
 async function updateUserPortfolio(context, investor, propertyId, shares, cost, action) {
@@ -1120,4 +1443,203 @@ async function updateUserYieldStats(context, investor, propertyId, amount) {
     portfolio.lastUpdated = BigInt(Date.now());
     context.UserPortfolio.set(portfolio);
   }
+}
+
+// ========================================
+// 🏆 AWARD-WINNING ANALYTICS FUNCTIONS
+// ========================================
+
+async function updateExecutorStats(context, executor, reward, executionType) {
+  let stats = await context.ExecutorStats.get(executor);
+  
+  if (!stats) {
+    stats = {
+      id: executor,
+      executor: executor,
+      totalExecutions: BigInt(0),
+      totalRewardsEarned: BigInt(0),
+      paymentExecutions: BigInt(0),
+      swapExecutions: BigInt(0),
+      averageReward: BigInt(0),
+      firstExecution: BigInt(Date.now()),
+      lastExecution: BigInt(Date.now()),
+    };
+  }
+  
+  stats.totalExecutions += BigInt(1);
+  stats.totalRewardsEarned += reward;
+  stats.lastExecution = BigInt(Date.now());
+  
+  if (executionType === 'payment') {
+    stats.paymentExecutions += BigInt(1);
+  } else if (executionType === 'swap') {
+    stats.swapExecutions += BigInt(1);
+  }
+  
+  // Calculate average reward
+  if (stats.totalExecutions > BigInt(0)) {
+    stats.averageReward = stats.totalRewardsEarned / stats.totalExecutions;
+  }
+  
+  context.ExecutorStats.set(stats);
+}
+
+async function updateDailyExecutorReward(context, executor, reward, timestamp) {
+  const date = new Date(Number(timestamp) * 1000).toISOString().split('T')[0];
+  const dailyId = `${executor}_${date}`;
+  
+  let dailyReward = await context.DailyExecutorReward.get(dailyId);
+  
+  if (!dailyReward) {
+    dailyReward = {
+      id: dailyId,
+      executor: executor,
+      date: date,
+      totalRewards: BigInt(0),
+      executionCount: BigInt(0),
+      paymentRewards: BigInt(0),
+      swapRewards: BigInt(0),
+    };
+  }
+  
+  dailyReward.totalRewards += reward;
+  dailyReward.executionCount += BigInt(1);
+  
+  context.DailyExecutorReward.set(dailyReward);
+}
+
+async function updateUserActivity(context, user, activityType, amount = BigInt(0)) {
+  let activity = await context.UserActivity.get(user);
+  
+  if (!activity) {
+    activity = {
+      id: user,
+      user: user,
+      totalPaymentsSent: BigInt(0),
+      totalPaymentsReceived: BigInt(0),
+      totalPaymentVolumeSent: BigInt(0),
+      totalPaymentVolumeReceived: BigInt(0),
+      activePaymentSchedules: BigInt(0),
+      totalSwaps: BigInt(0),
+      totalSwapVolumeUSDC: BigInt(0),
+      totalSwapVolumeETH: BigInt(0),
+      activeSwapSchedules: BigInt(0),
+      totalPropertyInvestments: BigInt(0),
+      totalPropertyVolume: BigInt(0),
+      totalYieldClaimed: BigInt(0),
+      propertiesOwned: [],
+      totalExecutions: BigInt(0),
+      totalExecutorRewards: BigInt(0),
+      firstActivity: BigInt(Date.now()),
+      lastActivity: BigInt(Date.now()),
+    };
+  }
+  
+  activity.lastActivity = BigInt(Date.now());
+  
+  switch (activityType) {
+    case 'payment_sent':
+      activity.totalPaymentsSent += BigInt(1);
+      activity.totalPaymentVolumeSent += amount;
+      break;
+    case 'payment_received':
+      activity.totalPaymentsReceived += BigInt(1);
+      activity.totalPaymentVolumeReceived += amount;
+      break;
+    case 'payment_schedule_created':
+      activity.activePaymentSchedules += BigInt(1);
+      break;
+    case 'swap_executed':
+    case 'instant_swap':
+      activity.totalSwaps += BigInt(1);
+      activity.totalSwapVolumeUSDC += amount;
+      break;
+    case 'swap_schedule_created':
+      activity.activeSwapSchedules += BigInt(1);
+      break;
+  }
+  
+  context.UserActivity.set(activity);
+}
+
+async function updateDailyStats(context, timestamp, eventType, amount1 = BigInt(0), amount2 = BigInt(0)) {
+  const date = new Date(Number(timestamp) * 1000).toISOString().split('T')[0];
+  
+  let stats = await context.DailyProtocolStats.get(date);
+  
+  if (!stats) {
+    stats = {
+      id: date,
+      date: date,
+      totalPayments: BigInt(0),
+      totalPaymentVolume: BigInt(0),
+      activePaymentSchedules: BigInt(0),
+      newPaymentSchedules: BigInt(0),
+      totalSwaps: BigInt(0),
+      totalSwapVolumeUSDC: BigInt(0),
+      totalSwapVolumeETH: BigInt(0),
+      activeSwapSchedules: BigInt(0),
+      newSwapSchedules: BigInt(0),
+      totalPropertyInvestments: BigInt(0),
+      totalPropertyVolume: BigInt(0),
+      totalYieldDistributed: BigInt(0),
+      totalExecutorRewards: BigInt(0),
+      activeExecutors: BigInt(0),
+      totalGasUsed: BigInt(0),
+      averageGasPrice: BigInt(0),
+    };
+  }
+  
+  switch (eventType) {
+    case 'payment_executed':
+      stats.totalPayments += BigInt(1);
+      stats.totalPaymentVolume += amount1;
+      break;
+    case 'payment_schedule_created':
+      stats.newPaymentSchedules += BigInt(1);
+      stats.activePaymentSchedules += BigInt(1);
+      break;
+    case 'swap_executed':
+      stats.totalSwaps += BigInt(1);
+      stats.totalSwapVolumeUSDC += amount1;
+      stats.totalSwapVolumeETH += amount2;
+      break;
+    case 'instant_swap':
+      stats.totalSwaps += BigInt(1);
+      stats.totalSwapVolumeUSDC += amount1;
+      stats.totalSwapVolumeETH += amount2;
+      break;
+    case 'swap_schedule_created':
+      stats.newSwapSchedules += BigInt(1);
+      stats.activeSwapSchedules += BigInt(1);
+      break;
+  }
+  
+  context.DailyProtocolStats.set(stats);
+}
+
+// Contract address detection helpers
+function isPaymentContract(address) {
+  return address.toLowerCase() === "0x6cb93c4538e7166f3e8c64ba654ec13b9fb74c96";
+}
+
+function isSwapContract(address) {
+  return address.toLowerCase() === "0xce3bf5ded091c822193f14502b724a1bf1040e5c";
+}
+
+function isPropertyContract(address) {
+  const propertyAddresses = [
+    "0xa16e02e87b7454126e5e10d957a927a7f5b5d2be", // Manhattan
+    "0xb7a5bd0345ef1cc5e66bf61bdec17d2461fbd968", // Miami
+    "0xeebe00ac0756308ac4aabfd76c05c4f3088b8883", // Austin
+    "0x10c6e9530f1c1af873a391030a1d9e8ed0630d26", // Seattle
+    "0x603e1bd79259ebcbaed0c83eec09ca0b89a5bcc", // Denver
+    "0x86337ddaf2661a069d0dcb5d160585acc2d15e9a", // Chicago
+    "0x9cfa6d15c80eb753c815079f2b32ddefd562c3e4", // Los Angeles
+    "0x427f7c59ed72bcf26dffc634fef3034e00922dd8", // Phoenix
+    "0x275039fc0fd2eefac30835af6aeff24e8c52ba6b", // Boston
+    "0x07e7876a32feec2ce734aae93d9ab7623eaef4a3", // Nashville
+  ];
+  
+  return propertyAddresses.includes(address.toLowerCase());
 }

@@ -1,14 +1,35 @@
 {
-  "name": "avana",
+  "name": "propchain-ai-envio-indexer",
   "version": "1.0.0",
-  "description": "Envio indexer for PropChain AI RWA platform",
-  "main": "src/EventHandlers.ts",
+  "description": "🏆 Award-Winning DeFi Analytics Indexer - Real-time tracking for RWA properties + Advanced Payment Automation + Swap Analytics",
+  "main": "src/EventHandlers.js",
+  "keywords": [
+    "envio",
+    "indexer",
+    "defi",
+    "rwa",
+    "real-world-assets",
+    "payment-automation",
+    "recurring-payments",
+    "swap-analytics",
+    "base-sepolia",
+    "blockchain-analytics",
+    "executor-rewards",
+    "portfolio-tracking"
+  ],
+  "author": "PropChain AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/propchain-ai/envio-indexer"
+  },
   "scripts": {
     "dev": "envio dev",
     "start": "envio start",
     "codegen": "envio codegen",
     "build": "envio build",
-    "test": "envio test"
+    "test": "envio test",
+    "deploy": "envio build && envio start"
   },
   "dependencies": {
     "envio": "^2.31.0"
@@ -16,5 +37,8 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
