@@ -44,9 +44,10 @@ yarn-error.log*
 backend/database.sqlite
 
 # Hardhat artifacts (keep some, ignore others)
-artifacts/build-info/
-artifacts/contracts/
+artifacts/
 !artifacts/shared/
+cache/
+*.dbg.json
 
 # TypeScript
 *.tsbuildinfo
@@ -57,6 +58,9 @@ coverage/
 # Temporary files
 tmp/
 temp/
+test-*.js
+config-simple.yaml
+contracts-package.json
 
 # Lock files (keep package-lock.json but ignore yarn.lock)
 yarn.lock
