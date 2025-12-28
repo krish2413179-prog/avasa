@@ -1,7 +1,7 @@
 {
-  "name": "propchain-contracts",
+  "name": "veda-contracts",
   "version": "1.0.0",
-  "description": "PropChain AI Real Estate Smart Contracts",
+  "description": "Veda AI Real Estate Smart Contracts",
   "scripts": {
     "compile": "hardhat compile",
     "deploy:local": "hardhat run shared/contracts/deploy-properties.js --network localhost",

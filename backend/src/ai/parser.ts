@@ -1,5 +1,5 @@
 export interface ParsedAction {
-  type: 'schedule_swap' | 'invest_real_estate' | 'claim_yield' | 'transfer_shares' | 'kyc_update' | 'portfolio_rebalance' | 'market_analysis' | 'stream_money' | 'resolve_basename' | 'borrow_against_assets' | 'auto_rebalance' | 'copy_trading' | 'limit_order' | 'yield_farmer' | 'smart_dca' | 'emergency_brake'
+  type: 'schedule_swap' | 'invest_real_estate' | 'claim_yield' | 'transfer_shares' | 'kyc_update' | 'portfolio_rebalance' | 'market_analysis' | 'stream_money' | 'resolve_basename' | 'borrow_against_assets' | 'auto_rebalance' | 'copy_trading' | 'limit_order' | 'yield_farmer' | 'smart_dca' | 'emergency_brake' | 'add_friend'
   description: string
   params: {
     // Scheduling parameters
@@ -70,6 +70,10 @@ export interface ParsedAction {
     
     // Other parameters
     complianceLevel?: 'basic' | 'enhanced' | 'institutional'
+    
+    // Friend management parameters
+    friendName?: string
+    friendAddress?: string
   }
 }
 
@@ -185,28 +189,28 @@ const PROPERTY_REGISTRY = {
   ]
 }
 
-export async function parseUserIntent(input: string): Promise<ParsedAction> {
+export async function parseUserIntent(input: string, userAddress?: string): Promise<ParsedAction> {
   try {
     const groqApiKey = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
     
     // Try Groq Function Calling first (cost-effective and powerful)
     if (groqApiKey && groqApiKey.startsWith('gsk_')) {
       console.log('🚀 Using Groq Function Calling for advanced RWA parsing:', input);
-      return await callGroqWithTools(input, groqApiKey);
+      return await callGroqWithTools(input, groqApiKey, userAddress);
     }
     
     console.log('ℹ️  No Groq API key found, using enhanced RWA mock parser');
-    return enhancedMockRWAParser(input);
+    return enhancedMockRWAParser(input, userAddress);
     
   } catch (error) {
     console.error('❌ AI parsing error:', (error as Error).message);
     console.log('🔄 Falling back to enhanced RWA mock parser');
-    return enhancedMockRWAParser(input);
+    return enhancedMockRWAParser(input, userAddress);
   }
 }
 
 // Advanced Groq Function Calling Implementation (fallback to enhanced prompting)
-async function callGroqWithTools(input: string, apiKey: string): Promise<ParsedAction> {
+async function callGroqWithTools(input: string, apiKey: string, userAddress?: string): Promise<ParsedAction> {
   // Since Groq function calling models are being decommissioned, 
   // we'll use enhanced prompting with the stable model
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -219,7 +223,7 @@ async function callGroqWithTools(input: string, apiKey: string): Promise<ParsedA
       messages: [
         {
           role: "system",
-          content: `You are PropChain AI, an advanced Real World Asset (RWA) investment parser with context awareness.
+          content: `You are Veda AI, an advanced Real World Asset (RWA) investment parser with context awareness.
 
 PROPERTY REGISTRY CONTEXT:
 ${JSON.stringify(PROPERTY_REGISTRY, null, 2)}
@@ -259,6 +263,7 @@ SUPPORTED ACTIONS:
 - yield_farmer: For EIP-7715 auto-compounding yield (Best Use #1)
 - smart_dca: For EIP-7715 weekly DCA with rate limits (Best Use #2)
 - emergency_brake: For EIP-7715 dormant stop-loss protection (Best Use #3)
+- add_friend: For saving contact addresses with names
 
 EIP-7715 ADVANCED PERMISSION STRATEGIES (Best Use Cases):
 1. "Turn on Auto-Compound" = yield_farmer with action: "activate"
@@ -279,9 +284,29 @@ STREAM RATE FORMATS:
 - Complex: "10 USD/2 hours", "50 USDC/3 days", "2.5 ETH/4 weeks"
 - Recipient formats: "alice.base.eth", "0x123...", or simple names like "ales"
 
+SIMPLE BUY/SELL vs LIMIT ORDERS:
+- Simple "buy 0.1 ETH" = schedule_swap with tokenIn: "USDC", tokenOut: "ETH", amount: "0.1", recurrence: "once"
+- Simple "sell 0.5 ETH" = schedule_swap with tokenIn: "ETH", tokenOut: "USDC", amount: "0.5", recurrence: "once"
+- Conditional "buy ETH if price drops below $2000" = limit_order with conditions
+- Conditional "sell ETH when price hits $4000" = limit_order with conditions
+
+CRITICAL: Simple buy/sell without conditions should be schedule_swap, NOT limit_order!
+- "Save 0x123... as alice" = add_friend with friendName: "alice", friendAddress: "0x123...", action: "add"
+- "Add friend bob 0x456..." = add_friend with friendName: "bob", friendAddress: "0x456...", action: "add"
+- "List friends" = add_friend with action: "list"
+- "Show contacts" = add_friend with action: "list"
+
+SIMPLE BUY/SELL vs LIMIT ORDERS:
+- Simple "buy 0.1 ETH" = schedule_swap with tokenIn: "USDC", tokenOut: "ETH", amount: "0.1", recurrence: "once"
+- Simple "sell 0.5 ETH" = schedule_swap with tokenIn: "ETH", tokenOut: "USDC", amount: "0.5", recurrence: "once"
+- Conditional "buy ETH if price drops below $2000" = limit_order with conditions
+- Conditional "sell ETH when price hits $4000" = limit_order with conditions
+
+CRITICAL: Simple buy/sell without conditions should be schedule_swap, NOT limit_order!
+
 Return ONLY valid JSON with this structure:
 {
-  "type": "schedule_swap|invest_real_estate|claim_yield|portfolio_rebalance|market_analysis|stream_money|resolve_basename|borrow_against_assets|auto_rebalance|copy_trading|limit_order|yield_farmer|smart_dca|emergency_brake",
+  "type": "schedule_swap|invest_real_estate|claim_yield|portfolio_rebalance|market_analysis|stream_money|resolve_basename|borrow_against_assets|auto_rebalance|copy_trading|limit_order|yield_farmer|smart_dca|emergency_brake|add_friend",
   "description": "Human readable description",
   "params": {
     "propertyId": "1-10 or 'all'",
@@ -306,7 +331,9 @@ Return ONLY valid JSON with this structure:
     "weeklyAmount": "0.1",
     "triggerPrice": "1500",
     "permissionType": "yield_farmer|smart_dca|emergency_brake",
-    "action": "create|stop|resolve|set|borrow|repay|activate|deactivate|execute|check"
+    "friendName": "alice",
+    "friendAddress": "0x123...",
+    "action": "create|stop|resolve|set|borrow|repay|activate|deactivate|execute|check|add|list"
   }
 }
 
@@ -347,6 +374,12 @@ Do not include explanations or markdown.`
   const parsed = JSON.parse(cleanResult);
   console.log('✅ Groq enhanced successfully parsed RWA command:', parsed);
   
+  // Validate the response format
+  if (!parsed.type || !parsed.description) {
+    console.log('⚠️ Invalid Groq response format, falling back to mock parser');
+    throw new Error('Invalid response format from Groq');
+  }
+  
   // Convert to our action format if needed
   if (parsed.params && parsed.params.propertyId) {
     const property = PROPERTY_REGISTRY.properties.find(p => p.id === parsed.params.propertyId);
@@ -362,9 +395,25 @@ Do not include explanations or markdown.`
 }
 
 // Enhanced fallback parser with scheduling and context awareness
-function enhancedMockRWAParser(input: string): ParsedAction {
+async function enhancedMockRWAParser(input: string, userAddress?: string): Promise<ParsedAction> {
   console.log('🔧 Using enhanced RWA mock parser for:', input);
   const lowerInput = input.toLowerCase();
+  
+  // Helper function to resolve friend names to addresses
+  const resolveFriendName = async (friendName: string): Promise<string | null> => {
+    if (!userAddress) return null;
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/friends/${userAddress}/resolve/${friendName}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.friendAddress;
+      }
+    } catch (error) {
+      console.log('Could not resolve friend name:', friendName);
+    }
+    return null;
+  };
   
   // CRITICAL: Check for negation first - but be more precise about context
   const directNegation = ['dont', "don't", 'do not', 'never'];
@@ -500,10 +549,17 @@ function enhancedMockRWAParser(input: string): ParsedAction {
       recipient = addressMatch[1];
     }
     
-    // Check for simple recipient name (like "ales")
+    // Check for simple recipient name (like "alice" - could be a friend)
     const nameMatch = input.match(/to\s+(\w+)(?:\s|$)/i);
     if (nameMatch && !basenameMatch && !addressMatch) {
-      recipient = nameMatch[1];
+      const friendName = nameMatch[1];
+      // Try to resolve friend name to address
+      const resolvedAddress = await resolveFriendName(friendName);
+      if (resolvedAddress) {
+        recipient = resolvedAddress;
+      } else {
+        recipient = friendName; // Keep the name if not found, frontend can handle
+      }
     }
     
     // Extract stream rate with improved parsing
@@ -803,7 +859,51 @@ function enhancedMockRWAParser(input: string): ParsedAction {
     };
   }
 
-  // Limit Order Commands
+  // Simple Buy/Sell Commands (not limit orders)
+  if ((lowerInput.includes('buy') || lowerInput.includes('sell')) && 
+      !lowerInput.includes('if') && !lowerInput.includes('when') && 
+      !lowerInput.includes('below') && !lowerInput.includes('above')) {
+    
+    // This is a simple buy/sell, not a limit order
+    const isBuy = lowerInput.includes('buy');
+    
+    // Extract amount and token
+    const amountMatch = input.match(/(\d+(?:\.\d+)?)/);
+    const tokenMatch = input.match(/\b(ETH|USDC|WETH|DAI)\b/gi);
+    
+    const amount = amountMatch ? amountMatch[1] : '1';
+    const targetToken = tokenMatch ? tokenMatch[0].toUpperCase() : 'ETH';
+    
+    if (isBuy) {
+      // Buying ETH with USDC (most common case)
+      return {
+        type: 'schedule_swap',
+        description: `Buy ${amount} ${targetToken} with USDC`,
+        params: {
+          action: 'create',
+          tokenIn: 'USDC',
+          tokenOut: targetToken,
+          amount: amount,
+          recurrence: 'once'
+        }
+      };
+    } else {
+      // Selling ETH for USDC
+      return {
+        type: 'schedule_swap',
+        description: `Sell ${amount} ${targetToken} for USDC`,
+        params: {
+          action: 'create',
+          tokenIn: targetToken,
+          tokenOut: 'USDC',
+          amount: amount,
+          recurrence: 'once'
+        }
+      };
+    }
+  }
+
+  // Limit Order Commands (with conditions)
   if ((lowerInput.includes('buy') || lowerInput.includes('sell')) && 
       (lowerInput.includes('if') || lowerInput.includes('when') || lowerInput.includes('below') || lowerInput.includes('above'))) {
     
@@ -860,6 +960,67 @@ function enhancedMockRWAParser(input: string): ParsedAction {
     };
   }
   
+  // Friend Management Commands
+  if ((lowerInput.includes('save') || lowerInput.includes('add')) && 
+      (lowerInput.includes('friend') || lowerInput.includes('contact') || 
+       (lowerInput.includes('as') && input.match(/0x[a-fA-F0-9]{40}/)))) {
+    
+    // Extract address and name
+    const addressMatch = input.match(/(0x[a-fA-F0-9]{40})/);
+    let friendName = '';
+    let friendAddress = '';
+    
+    if (addressMatch) {
+      friendAddress = addressMatch[1];
+      
+      // Try to extract name after "as" or "save ... as"
+      const nameAfterAs = input.match(/as\s+(\w+)/i);
+      if (nameAfterAs) {
+        friendName = nameAfterAs[1];
+      } else {
+        // Try to extract name before address
+        const nameBeforeAddress = input.match(/(\w+)\s+0x/i);
+        if (nameBeforeAddress) {
+          friendName = nameBeforeAddress[1];
+        }
+      }
+    }
+    
+    if (friendAddress && friendName) {
+      return {
+        type: 'add_friend',
+        description: `Save ${friendAddress} as "${friendName}"`,
+        params: {
+          action: 'add',
+          friendName: friendName,
+          friendAddress: friendAddress
+        }
+      };
+    } else {
+      return {
+        type: 'add_friend',
+        description: 'Please provide both a name and address. Example: "save 0x123... as alice"',
+        params: {
+          action: 'error',
+          error: 'Missing name or address',
+          message: 'Format: "save 0x123... as alice" or "add friend alice 0x123..."'
+        }
+      };
+    }
+  }
+
+  // List Friends Command
+  if ((lowerInput.includes('list') || lowerInput.includes('show')) && 
+      (lowerInput.includes('friends') || lowerInput.includes('contacts'))) {
+    return {
+      type: 'add_friend',
+      description: 'Show all saved friends',
+      params: {
+        action: 'list'
+      }
+    };
+  }
+
   // Market Analysis Commands
   if (lowerInput.includes('analyze') || lowerInput.includes('market') || lowerInput.includes('trends')) {
     return {

@@ -3,10 +3,10 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "PropChain AI | Next-Gen RWA DeFi Platform",
+  title: "Veda | Next-Gen RWA DeFi Platform",
   description: "Revolutionary Real World Asset DeFi platform powered by advanced AI agents and EIP-7715 permissions.",
-  keywords: ["RWA", "DeFi", "Real Estate", "AI", "Blockchain", "PropChain"],
-  authors: [{ name: "PropChain Team" }],
+  keywords: ["RWA", "DeFi", "Real Estate", "AI", "Blockchain", "Veda"],
+  authors: [{ name: "Veda Team" }],
   viewport: "width=device-width, initial-scale=1",
 };
 
@@ -29,12 +29,29 @@ export default function RootLayout({
         margin: 0,
         padding: 0,
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        fontFamily: 'Inter, system-ui, sans-serif'
+        width: '100vw', // Full viewport width
+        background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)', // Darker theme
+        fontFamily: 'Inter, system-ui, sans-serif',
+        boxSizing: 'border-box',
+        overflow: 'hidden' // Prevent any scrollbars
       }}>
         <Providers>
-          <div className="min-h-screen flex flex-col">
-            <main className="flex-1 relative">
+          <div style={{ 
+            minHeight: '100vh', 
+            width: '100vw',
+            display: 'flex', 
+            flexDirection: 'column',
+            margin: 0,
+            padding: 0,
+            boxSizing: 'border-box'
+          }}>
+            <main style={{ 
+              flex: 1, 
+              position: 'relative',
+              width: '100%',
+              margin: 0,
+              padding: 0
+            }}>
               {children}
             </main>
           </div>
