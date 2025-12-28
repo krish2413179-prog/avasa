@@ -1,6 +1,11 @@
 // Auto-generated contract addresses
 export const REAL_ESTATE_FACTORY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
+// Core DeFi Contract Addresses
+export const AUTO_RECURRING_PAYMENTS_ADDRESS = "0x6cB93c4538E7166F3E8c64bA654Ec13b9fB74C96";
+export const SIMPLE_SWAP_POOL_ADDRESS = "0xCe3bf5DEd091c822193F14502B724a1bf1040E5C";
+export const USDC_TOKEN_ADDRESS = "0x6B0dacea6a72E759243c99Eaed840DEe9564C194";
+
 export const REAL_ESTATE_PROPERTIES = {
   "1": {
     name: "Manhattan Luxury Apartments",
