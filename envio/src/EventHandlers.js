@@ -29,6 +29,30 @@ const {
 } = require("../generated");
 
 // ========================================
+// 🔧 HELPER FUNCTIONS FOR EVENT HANDLING
+// ========================================
+
+/**
+ * Safely get transaction hash from event object
+ * Envio might provide transaction hash in different fields
+ */
+function getTransactionHash(event) {
+  return event.transaction?.hash || 
+         event.transactionHash || 
+         event.txHash ||
+         `block_${event.block.number}_log_${event.logIndex}`;
+}
+
+/**
+ * Generate unique entity ID using available event data
+ */
+function generateEntityId(event, suffix = '') {
+  const txHash = getTransactionHash(event);
+  const logIndex = event.logIndex || 0;
+  return suffix ? `${txHash}_${logIndex}_${suffix}` : `${txHash}_${logIndex}`;
+}
+
+// ========================================
 // 🚀 AUTORECURRINGPAYMENTS EVENT HANDLERS
 // ========================================
 
@@ -81,7 +105,7 @@ AutoRecurringPayments.PaymentScheduleCreated.handler(async ({ event, context }) 
 // Payment Executed Event
 AutoRecurringPayments.PaymentExecuted.handler(async ({ event, context }) => {
   const executionEntity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     scheduleId: event.params.scheduleId,
     payer: event.params.payer,
     recipient: event.params.recipient,
@@ -90,7 +114,7 @@ AutoRecurringPayments.PaymentExecuted.handler(async ({ event, context }) => {
     executorReward: event.params.reward,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
     gasUsed: BigInt(0), // Will be updated from transaction data
     gasPrice: BigInt(0), // Will be updated from transaction data
   };
@@ -187,7 +211,7 @@ SimpleSwapPool.SwapScheduleCreated.handler(async ({ event, context }) => {
 // Swap Executed Event
 SimpleSwapPool.SwapExecuted.handler(async ({ event, context }) => {
   const executionEntity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     scheduleId: event.params.scheduleId,
     user: event.params.user,
     usdcAmount: event.params.usdcAmount,
@@ -197,7 +221,7 @@ SimpleSwapPool.SwapExecuted.handler(async ({ event, context }) => {
     swapType: "recurring",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
     gasUsed: BigInt(0),
     gasPrice: BigInt(0),
   };
@@ -230,7 +254,7 @@ SimpleSwapPool.SwapExecuted.handler(async ({ event, context }) => {
 // Instant Swap Event
 SimpleSwapPool.InstantSwap.handler(async ({ event, context }) => {
   const executionEntity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     scheduleId: null, // No schedule for instant swaps
     user: event.params.user,
     usdcAmount: event.params.usdcAmount,
@@ -240,7 +264,7 @@ SimpleSwapPool.InstantSwap.handler(async ({ event, context }) => {
     swapType: "instant",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
     gasUsed: BigInt(0),
     gasPrice: BigInt(0),
   };
