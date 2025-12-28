@@ -29,8 +29,8 @@ networks:
           - event: SwapExecuted(bytes32 indexed scheduleId, address indexed user, uint256 usdcAmount, uint256 ethAmount, address executor, uint256 reward)
           - event: InstantSwap(address indexed user, uint256 usdcAmount, uint256 ethAmount)
           - event: SwapScheduleCancelled(bytes32 indexed scheduleId)
-          - event: LiquidityAdded(uint256 ethAmount, uint256 usdcAmount)
-          - event: LiquidityRemoved(uint256 ethAmount, uint256 usdcAmount)
+          # - event: LiquidityAdded(uint256 ethAmount, uint256 usdcAmount)
+          # - event: LiquidityRemoved(uint256 ethAmount, uint256 usdcAmount)
           - event: ExecutorRewarded(address indexed executor, uint256 reward, bytes32 scheduleId)
           - event: PermissionGranted(address indexed user, uint256 maxAmountPerSwap, uint256 maxTotalAmount, uint256 validUntil)
           

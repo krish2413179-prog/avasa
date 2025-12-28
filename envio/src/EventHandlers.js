@@ -266,35 +266,35 @@ SimpleSwapPool.SwapScheduleCancelled.handler(async ({ event, context }) => {
   await updateDailyStats(context, event.block.timestamp, 'swap_schedule_cancelled');
 });
 
-// Liquidity Added Event
-SimpleSwapPool.LiquidityAdded.handler(async ({ event, context }) => {
-  const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
-    eventType: "add",
-    ethAmount: event.params.ethAmount,
-    usdcAmount: event.params.usdcAmount,
-    timestamp: event.block.timestamp,
-    blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
-  };
+// Liquidity Added Event - TEMPORARILY DISABLED FOR DEBUGGING
+// SimpleSwapPool.LiquidityAdded.handler(async ({ event, context }) => {
+//   const entity = {
+//     id: `${event.transactionHash}_${event.logIndex}`,
+//     eventType: "add",
+//     ethAmount: BigInt(event.params.ethAmount.toString()),
+//     usdcAmount: BigInt(event.params.usdcAmount.toString()),
+//     timestamp: BigInt(event.block.timestamp.toString()),
+//     blockNumber: BigInt(event.block.number.toString()),
+//     transactionHash: event.transactionHash.toString(),
+//   };
 
-  context.LiquidityEvent.set(entity);
-});
+//   context.LiquidityEvent.set(entity);
+// });
 
-// Liquidity Removed Event
-SimpleSwapPool.LiquidityRemoved.handler(async ({ event, context }) => {
-  const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
-    eventType: "remove",
-    ethAmount: event.params.ethAmount,
-    usdcAmount: event.params.usdcAmount,
-    timestamp: event.block.timestamp,
-    blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
-  };
+// Liquidity Removed Event - TEMPORARILY DISABLED FOR DEBUGGING
+// SimpleSwapPool.LiquidityRemoved.handler(async ({ event, context }) => {
+//   const entity = {
+//     id: `${event.transactionHash}_${event.logIndex}`,
+//     eventType: "remove",
+//     ethAmount: BigInt(event.params.ethAmount.toString()),
+//     usdcAmount: BigInt(event.params.usdcAmount.toString()),
+//     timestamp: BigInt(event.block.timestamp.toString()),
+//     blockNumber: BigInt(event.block.number.toString()),
+//     transactionHash: event.transactionHash.toString(),
+//   };
 
-  context.LiquidityEvent.set(entity);
-});
+//   context.LiquidityEvent.set(entity);
+// });
 
 // SimpleSwapPool Executor Rewarded Event
 SimpleSwapPool.ExecutorRewarded.handler(async ({ event, context }) => {
