@@ -296,6 +296,15 @@ SimpleSwapPool.LiquidityRemoved.handler(async ({ event, context }) => {
   context.LiquidityEvent.set(entity);
 });
 
+// SimpleSwapPool Executor Rewarded Event
+SimpleSwapPool.ExecutorRewarded.handler(async ({ event, context }) => {
+  // Update executor stats for swap executions
+  await updateExecutorStats(context, event.params.executor, event.params.reward, 'swap');
+  
+  // Update daily executor reward tracking
+  await updateDailyExecutorReward(context, event.params.executor, event.params.reward, event.block.timestamp);
+});
+
 // ========================================
 // 💎 USDC TOKEN EVENT HANDLERS
 // ========================================
@@ -1418,7 +1427,7 @@ async function updateUserPortfolio(context, investor, propertyId, shares, cost, 
       totalShares: BigInt(0),
       totalInvested: BigInt(0),
       totalYieldClaimed: BigInt(0),
-      lastUpdated: BigInt(Date.now()),
+      lastUpdated: BigInt(Math.floor(Date.now() / 1000)),
     };
   }
   
@@ -1429,7 +1438,7 @@ async function updateUserPortfolio(context, investor, propertyId, shares, cost, 
     portfolio.totalShares -= shares;
   }
   
-  portfolio.lastUpdated = BigInt(Date.now());
+  portfolio.lastUpdated = BigInt(Math.floor(Date.now() / 1000));
   context.UserPortfolio.set(portfolio);
 }
 
@@ -1440,7 +1449,7 @@ async function updateUserYieldStats(context, investor, propertyId, amount) {
   
   if (portfolio) {
     portfolio.totalYieldClaimed += amount;
-    portfolio.lastUpdated = BigInt(Date.now());
+    portfolio.lastUpdated = BigInt(Math.floor(Date.now() / 1000));
     context.UserPortfolio.set(portfolio);
   }
 }
@@ -1461,14 +1470,14 @@ async function updateExecutorStats(context, executor, reward, executionType) {
       paymentExecutions: BigInt(0),
       swapExecutions: BigInt(0),
       averageReward: BigInt(0),
-      firstExecution: BigInt(Date.now()),
-      lastExecution: BigInt(Date.now()),
+      firstExecution: BigInt(Math.floor(Date.now() / 1000)),
+      lastExecution: BigInt(Math.floor(Date.now() / 1000)),
     };
   }
   
   stats.totalExecutions += BigInt(1);
   stats.totalRewardsEarned += reward;
-  stats.lastExecution = BigInt(Date.now());
+  stats.lastExecution = BigInt(Math.floor(Date.now() / 1000));
   
   if (executionType === 'payment') {
     stats.paymentExecutions += BigInt(1);
@@ -1530,12 +1539,12 @@ async function updateUserActivity(context, user, activityType, amount = BigInt(0
       propertiesOwned: [],
       totalExecutions: BigInt(0),
       totalExecutorRewards: BigInt(0),
-      firstActivity: BigInt(Date.now()),
-      lastActivity: BigInt(Date.now()),
+      firstActivity: BigInt(Math.floor(Date.now() / 1000)),
+      lastActivity: BigInt(Math.floor(Date.now() / 1000)),
     };
   }
   
-  activity.lastActivity = BigInt(Date.now());
+  activity.lastActivity = BigInt(Math.floor(Date.now() / 1000));
   
   switch (activityType) {
     case 'payment_sent':
