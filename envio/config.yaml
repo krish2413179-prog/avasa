@@ -3,7 +3,7 @@ description: 🏆 Award-Winning Real-time DeFi Analytics - PropChain AI RWA Plat
 
 networks:
   - id: 84532 # Base Sepolia
-    start_block: 0
+    start_block: 35580445
     contracts:
       # ========================================
       # 🚀 CORE DEFI CONTRACTS (DEPLOYED & ACTIVE)
