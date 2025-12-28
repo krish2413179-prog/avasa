@@ -293,13 +293,13 @@ SimpleSwapPool.SwapScheduleCancelled.handler(async ({ event, context }) => {
 // Liquidity Added Event - TEMPORARILY DISABLED FOR DEBUGGING
 // SimpleSwapPool.LiquidityAdded.handler(async ({ event, context }) => {
 //   const entity = {
-//     id: `${event.transactionHash}_${event.logIndex}`,
+//     id: generateEntityId(event),
 //     eventType: "add",
 //     ethAmount: BigInt(event.params.ethAmount.toString()),
 //     usdcAmount: BigInt(event.params.usdcAmount.toString()),
 //     timestamp: BigInt(event.block.timestamp.toString()),
 //     blockNumber: BigInt(event.block.number.toString()),
-//     transactionHash: event.transactionHash.toString(),
+//     transactionHash: getTransactionHash(event).toString(),
 //   };
 
 //   context.LiquidityEvent.set(entity);
@@ -308,13 +308,13 @@ SimpleSwapPool.SwapScheduleCancelled.handler(async ({ event, context }) => {
 // Liquidity Removed Event - TEMPORARILY DISABLED FOR DEBUGGING
 // SimpleSwapPool.LiquidityRemoved.handler(async ({ event, context }) => {
 //   const entity = {
-//     id: `${event.transactionHash}_${event.logIndex}`,
+//     id: generateEntityId(event),
 //     eventType: "remove",
 //     ethAmount: BigInt(event.params.ethAmount.toString()),
 //     usdcAmount: BigInt(event.params.usdcAmount.toString()),
 //     timestamp: BigInt(event.block.timestamp.toString()),
 //     blockNumber: BigInt(event.block.number.toString()),
-//     transactionHash: event.transactionHash.toString(),
+//     transactionHash: getTransactionHash(event).toString(),
 //   };
 
 //   context.LiquidityEvent.set(entity);
@@ -405,7 +405,7 @@ ManhattanLuxuryApartments.SharesPurchased.handler(async ({ event, context }) => 
 
 ManhattanLuxuryApartments.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "1",
     propertyName: "Manhattan Luxury Apartments",
     propertyAddress: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
@@ -414,7 +414,7 @@ ManhattanLuxuryApartments.YieldDistributed.handler(async ({ event, context }) =>
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -426,7 +426,7 @@ ManhattanLuxuryApartments.YieldDistributed.handler(async ({ event, context }) =>
 // Miami Beach Condos (#2)
 MiamiBeachCondos.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "2",
     propertyName: "Miami Beach Condos",
     propertyAddress: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
@@ -437,7 +437,7 @@ MiamiBeachCondos.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -446,7 +446,7 @@ MiamiBeachCondos.SharesPurchased.handler(async ({ event, context }) => {
 
 MiamiBeachCondos.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "2",
     propertyName: "Miami Beach Condos",
     propertyAddress: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
@@ -455,7 +455,7 @@ MiamiBeachCondos.YieldDistributed.handler(async ({ event, context }) => {
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -465,7 +465,7 @@ MiamiBeachCondos.YieldDistributed.handler(async ({ event, context }) => {
 // Austin Tech Hub Office (#3)
 AustinTechHubOffice.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "3",
     propertyName: "Austin Tech Hub Office",
     propertyAddress: "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883",
@@ -476,7 +476,7 @@ AustinTechHubOffice.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -485,7 +485,7 @@ AustinTechHubOffice.SharesPurchased.handler(async ({ event, context }) => {
 
 AustinTechHubOffice.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "3",
     propertyName: "Austin Tech Hub Office",
     propertyAddress: "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883",
@@ -494,7 +494,7 @@ AustinTechHubOffice.YieldDistributed.handler(async ({ event, context }) => {
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -504,7 +504,7 @@ AustinTechHubOffice.YieldDistributed.handler(async ({ event, context }) => {
 // Seattle Warehouse District (#4)
 SeattleWarehouseDistrict.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "4",
     propertyName: "Seattle Warehouse District",
     propertyAddress: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26",
@@ -515,7 +515,7 @@ SeattleWarehouseDistrict.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -524,7 +524,7 @@ SeattleWarehouseDistrict.SharesPurchased.handler(async ({ event, context }) => {
 
 SeattleWarehouseDistrict.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "4",
     propertyName: "Seattle Warehouse District",
     propertyAddress: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26",
@@ -533,7 +533,7 @@ SeattleWarehouseDistrict.YieldDistributed.handler(async ({ event, context }) => 
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -543,7 +543,7 @@ SeattleWarehouseDistrict.YieldDistributed.handler(async ({ event, context }) => 
 // Denver Mountain Resort (#5)
 DenverMountainResort.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "5",
     propertyName: "Denver Mountain Resort",
     propertyAddress: "0x603E1BD79259EbcbAaeD0c83eeC09cA0B89a5bcC",
@@ -554,7 +554,7 @@ DenverMountainResort.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -563,7 +563,7 @@ DenverMountainResort.SharesPurchased.handler(async ({ event, context }) => {
 
 DenverMountainResort.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "5",
     propertyName: "Denver Mountain Resort",
     propertyAddress: "0x603E1BD79259EbcbAaeD0c83eeC09cA0B89a5bcC",
@@ -572,7 +572,7 @@ DenverMountainResort.YieldDistributed.handler(async ({ event, context }) => {
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -582,7 +582,7 @@ DenverMountainResort.YieldDistributed.handler(async ({ event, context }) => {
 // Chicago Downtown Lofts (#6)
 ChicagoDowntownLofts.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "6",
     propertyName: "Chicago Downtown Lofts",
     propertyAddress: "0x86337dDaF2661A069D0DcB5D160585acC2d15E9a",
@@ -593,7 +593,7 @@ ChicagoDowntownLofts.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -602,7 +602,7 @@ ChicagoDowntownLofts.SharesPurchased.handler(async ({ event, context }) => {
 
 ChicagoDowntownLofts.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "6",
     propertyName: "Chicago Downtown Lofts",
     propertyAddress: "0x86337dDaF2661A069D0DcB5D160585acC2d15E9a",
@@ -611,7 +611,7 @@ ChicagoDowntownLofts.YieldDistributed.handler(async ({ event, context }) => {
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -621,7 +621,7 @@ ChicagoDowntownLofts.YieldDistributed.handler(async ({ event, context }) => {
 // Los Angeles Studio Complex (#7)
 LosAngelesStudioComplex.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "7",
     propertyName: "Los Angeles Studio Complex",
     propertyAddress: "0x9CfA6D15c80Eb753C815079F2b32ddEFd562C3e4",
@@ -632,7 +632,7 @@ LosAngelesStudioComplex.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -641,7 +641,7 @@ LosAngelesStudioComplex.SharesPurchased.handler(async ({ event, context }) => {
 
 LosAngelesStudioComplex.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "7",
     propertyName: "Los Angeles Studio Complex",
     propertyAddress: "0x9CfA6D15c80Eb753C815079F2b32ddEFd562C3e4",
@@ -650,7 +650,7 @@ LosAngelesStudioComplex.YieldDistributed.handler(async ({ event, context }) => {
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -660,7 +660,7 @@ LosAngelesStudioComplex.YieldDistributed.handler(async ({ event, context }) => {
 // Phoenix Retail Plaza (#8)
 PhoenixRetailPlaza.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "8",
     propertyName: "Phoenix Retail Plaza",
     propertyAddress: "0x427f7c59ED72bCf26DfFc634FEF3034e00922DD8",
@@ -671,7 +671,7 @@ PhoenixRetailPlaza.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -680,7 +680,7 @@ PhoenixRetailPlaza.SharesPurchased.handler(async ({ event, context }) => {
 
 PhoenixRetailPlaza.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "8",
     propertyName: "Phoenix Retail Plaza",
     propertyAddress: "0x427f7c59ED72bCf26DfFc634FEF3034e00922DD8",
@@ -689,7 +689,7 @@ PhoenixRetailPlaza.YieldDistributed.handler(async ({ event, context }) => {
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -699,7 +699,7 @@ PhoenixRetailPlaza.YieldDistributed.handler(async ({ event, context }) => {
 // Boston Historic Brownstones (#9)
 BostonHistoricBrownstones.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "9",
     propertyName: "Boston Historic Brownstones",
     propertyAddress: "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B",
@@ -710,7 +710,7 @@ BostonHistoricBrownstones.SharesPurchased.handler(async ({ event, context }) => 
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -719,7 +719,7 @@ BostonHistoricBrownstones.SharesPurchased.handler(async ({ event, context }) => 
 
 BostonHistoricBrownstones.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "9",
     propertyName: "Boston Historic Brownstones",
     propertyAddress: "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B",
@@ -728,7 +728,7 @@ BostonHistoricBrownstones.YieldDistributed.handler(async ({ event, context }) =>
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -738,7 +738,7 @@ BostonHistoricBrownstones.YieldDistributed.handler(async ({ event, context }) =>
 // Nashville Music District (#10)
 NashvilleMusicDistrict.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "10",
     propertyName: "Nashville Music District",
     propertyAddress: "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3",
@@ -749,7 +749,7 @@ NashvilleMusicDistrict.SharesPurchased.handler(async ({ event, context }) => {
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -758,7 +758,7 @@ NashvilleMusicDistrict.SharesPurchased.handler(async ({ event, context }) => {
 
 NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "10",
     propertyName: "Nashville Music District",
     propertyAddress: "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3",
@@ -767,7 +767,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
     action: "yield_claim",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.YieldTransaction.set(entity);
@@ -781,7 +781,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 // Uniswap V3 Swap Tracking
 // UniswapV3Router.Swap.handler(async ({ event, context }) => {
 //   const entity = {
-//     id: `${event.transactionHash}_${event.logIndex}`,
+//     id: generateEntityId(event),
 //     sender: event.params.sender,
 //     recipient: event.params.recipient,
 //     amount0: event.params.amount0,
@@ -791,7 +791,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 //     tick: event.params.tick,
 //     timestamp: event.block.timestamp,
 //     blockNumber: event.block.number,
-//     transactionHash: event.transactionHash,
+//     transactionHash: getTransactionHash(event),
 //   };
 
 //   context.SwapTransaction.set(entity);
@@ -800,7 +800,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 // Superfluid Stream Tracking
 // SuperfluidHost.FlowUpdated.handler(async ({ event, context }) => {
 //   const entity = {
-//     id: `${event.transactionHash}_${event.logIndex}`,
+//     id: generateEntityId(event),
 //     token: event.params.token,
 //     sender: event.params.sender,
 //     receiver: event.params.receiver,
@@ -809,7 +809,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 //     totalReceiverFlowRate: event.params.totalReceiverFlowRate,
 //     timestamp: event.block.timestamp,
 //     blockNumber: event.block.number,
-//     transactionHash: event.transactionHash,
+//     transactionHash: getTransactionHash(event),
 //   };
 
 //   context.StreamTransaction.set(entity);
@@ -818,7 +818,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 // Aave V3 Supply Tracking
 // AaveV3Pool.Supply.handler(async ({ event, context }) => {
 //   const entity = {
-//     id: `${event.transactionHash}_${event.logIndex}`,
+//     id: generateEntityId(event),
 //     reserve: event.params.reserve,
 //     user: event.params.user,
 //     onBehalfOf: event.params.onBehalfOf,
@@ -831,7 +831,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 //     action: "supply",
 //     timestamp: event.block.timestamp,
 //     blockNumber: event.block.number,
-//     transactionHash: event.transactionHash,
+//     transactionHash: getTransactionHash(event),
 //   };
 
 //   context.LendingTransaction.set(entity);
@@ -840,7 +840,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 // Aave V3 Borrow Tracking
 // AaveV3Pool.Borrow.handler(async ({ event, context }) => {
 //   const entity = {
-//     id: `${event.transactionHash}_${event.logIndex}`,
+//     id: generateEntityId(event),
 //     reserve: event.params.reserve,
 //     user: event.params.user,
 //     onBehalfOf: event.params.onBehalfOf,
@@ -853,7 +853,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 //     action: "borrow",
 //     timestamp: event.block.timestamp,
 //     blockNumber: event.block.number,
-//     transactionHash: event.transactionHash,
+//     transactionHash: getTransactionHash(event),
 //   };
 
 //   context.LendingTransaction.set(entity);
@@ -862,7 +862,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 // Aave V3 Repay Tracking
 // AaveV3Pool.Repay.handler(async ({ event, context }) => {
 //   const entity = {
-//     id: `${event.transactionHash}_${event.logIndex}`,
+//     id: generateEntityId(event),
 //     reserve: event.params.reserve,
 //     user: event.params.user,
 //     onBehalfOf: "",
@@ -875,7 +875,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 //     action: "repay",
 //     timestamp: event.block.timestamp,
 //     blockNumber: event.block.number,
-//     transactionHash: event.transactionHash,
+//     transactionHash: getTransactionHash(event),
 //   };
 
 //   context.LendingTransaction.set(entity);
@@ -888,7 +888,7 @@ NashvilleMusicDistrict.YieldDistributed.handler(async ({ event, context }) => {
 // Manhattan Luxury Apartments Transfer
 ManhattanLuxuryApartments.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "1",
     propertyName: "Manhattan Luxury Apartments",
     propertyAddress: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
@@ -897,7 +897,7 @@ ManhattanLuxuryApartments.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -906,7 +906,7 @@ ManhattanLuxuryApartments.Transfer.handler(async ({ event, context }) => {
 // Miami Beach Condos Transfer
 MiamiBeachCondos.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "2",
     propertyName: "Miami Beach Condos",
     propertyAddress: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
@@ -915,7 +915,7 @@ MiamiBeachCondos.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -924,7 +924,7 @@ MiamiBeachCondos.Transfer.handler(async ({ event, context }) => {
 // Austin Tech Hub Office Transfer
 AustinTechHubOffice.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "3",
     propertyName: "Austin Tech Hub Office",
     propertyAddress: "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883",
@@ -933,7 +933,7 @@ AustinTechHubOffice.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -942,7 +942,7 @@ AustinTechHubOffice.Transfer.handler(async ({ event, context }) => {
 // Seattle Warehouse District Transfer
 SeattleWarehouseDistrict.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "4",
     propertyName: "Seattle Warehouse District",
     propertyAddress: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26",
@@ -951,7 +951,7 @@ SeattleWarehouseDistrict.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -960,7 +960,7 @@ SeattleWarehouseDistrict.Transfer.handler(async ({ event, context }) => {
 // Denver Mountain Resort Transfer
 DenverMountainResort.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "5",
     propertyName: "Denver Mountain Resort",
     propertyAddress: "0x603E1BD79259EbcbAaeD0c83eeC09cA0B89a5bcC",
@@ -969,7 +969,7 @@ DenverMountainResort.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -978,7 +978,7 @@ DenverMountainResort.Transfer.handler(async ({ event, context }) => {
 // Chicago Downtown Lofts Transfer
 ChicagoDowntownLofts.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "6",
     propertyName: "Chicago Downtown Lofts",
     propertyAddress: "0x86337dDaF2661A069D0DcB5D160585acC2d15E9a",
@@ -987,7 +987,7 @@ ChicagoDowntownLofts.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -996,7 +996,7 @@ ChicagoDowntownLofts.Transfer.handler(async ({ event, context }) => {
 // Los Angeles Studio Complex Transfer
 LosAngelesStudioComplex.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "7",
     propertyName: "Los Angeles Studio Complex",
     propertyAddress: "0x9CfA6D15c80Eb753C815079F2b32ddEFd562C3e4",
@@ -1005,7 +1005,7 @@ LosAngelesStudioComplex.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -1014,7 +1014,7 @@ LosAngelesStudioComplex.Transfer.handler(async ({ event, context }) => {
 // Phoenix Retail Plaza Transfer
 PhoenixRetailPlaza.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "8",
     propertyName: "Phoenix Retail Plaza",
     propertyAddress: "0x427f7c59ED72bCf26DfFc634FEF3034e00922DD8",
@@ -1023,7 +1023,7 @@ PhoenixRetailPlaza.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -1032,7 +1032,7 @@ PhoenixRetailPlaza.Transfer.handler(async ({ event, context }) => {
 // Boston Historic Brownstones Transfer
 BostonHistoricBrownstones.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "9",
     propertyName: "Boston Historic Brownstones",
     propertyAddress: "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B",
@@ -1041,7 +1041,7 @@ BostonHistoricBrownstones.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -1050,7 +1050,7 @@ BostonHistoricBrownstones.Transfer.handler(async ({ event, context }) => {
 // Nashville Music District Transfer
 NashvilleMusicDistrict.Transfer.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "10",
     propertyName: "Nashville Music District",
     propertyAddress: "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3",
@@ -1059,7 +1059,7 @@ NashvilleMusicDistrict.Transfer.handler(async ({ event, context }) => {
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.TransferTransaction.set(entity);
@@ -1072,7 +1072,7 @@ NashvilleMusicDistrict.Transfer.handler(async ({ event, context }) => {
 // Manhattan Luxury Apartments SharesWithdrawn
 ManhattanLuxuryApartments.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "1",
     propertyName: "Manhattan Luxury Apartments",
     propertyAddress: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
@@ -1083,7 +1083,7 @@ ManhattanLuxuryApartments.SharesWithdrawn.handler(async ({ event, context }) => 
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1093,7 +1093,7 @@ ManhattanLuxuryApartments.SharesWithdrawn.handler(async ({ event, context }) => 
 // Miami Beach Condos SharesWithdrawn
 MiamiBeachCondos.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "2",
     propertyName: "Miami Beach Condos",
     propertyAddress: "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
@@ -1104,7 +1104,7 @@ MiamiBeachCondos.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1114,7 +1114,7 @@ MiamiBeachCondos.SharesWithdrawn.handler(async ({ event, context }) => {
 // Austin Tech Hub Office SharesWithdrawn
 AustinTechHubOffice.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "3",
     propertyName: "Austin Tech Hub Office",
     propertyAddress: "0xeEBe00Ac0756308ac4AaBfD76c05c4F3088B8883",
@@ -1125,7 +1125,7 @@ AustinTechHubOffice.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1135,7 +1135,7 @@ AustinTechHubOffice.SharesWithdrawn.handler(async ({ event, context }) => {
 // Seattle Warehouse District SharesWithdrawn
 SeattleWarehouseDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "4",
     propertyName: "Seattle Warehouse District",
     propertyAddress: "0x10C6E9530F1C1AF873a391030a1D9E8ed0630D26",
@@ -1146,7 +1146,7 @@ SeattleWarehouseDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1156,7 +1156,7 @@ SeattleWarehouseDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
 // Denver Mountain Resort SharesWithdrawn
 DenverMountainResort.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "5",
     propertyName: "Denver Mountain Resort",
     propertyAddress: "0x603E1BD79259EbcbAaeD0c83eeC09cA0B89a5bcC",
@@ -1167,7 +1167,7 @@ DenverMountainResort.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1177,7 +1177,7 @@ DenverMountainResort.SharesWithdrawn.handler(async ({ event, context }) => {
 // Chicago Downtown Lofts SharesWithdrawn
 ChicagoDowntownLofts.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "6",
     propertyName: "Chicago Downtown Lofts",
     propertyAddress: "0x86337dDaF2661A069D0DcB5D160585acC2d15E9a",
@@ -1188,7 +1188,7 @@ ChicagoDowntownLofts.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1198,7 +1198,7 @@ ChicagoDowntownLofts.SharesWithdrawn.handler(async ({ event, context }) => {
 // Los Angeles Studio Complex SharesWithdrawn
 LosAngelesStudioComplex.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "7",
     propertyName: "Los Angeles Studio Complex",
     propertyAddress: "0x9CfA6D15c80Eb753C815079F2b32ddEFd562C3e4",
@@ -1209,7 +1209,7 @@ LosAngelesStudioComplex.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1219,7 +1219,7 @@ LosAngelesStudioComplex.SharesWithdrawn.handler(async ({ event, context }) => {
 // Phoenix Retail Plaza SharesWithdrawn
 PhoenixRetailPlaza.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "8",
     propertyName: "Phoenix Retail Plaza",
     propertyAddress: "0x427f7c59ED72bCf26DfFc634FEF3034e00922DD8",
@@ -1230,7 +1230,7 @@ PhoenixRetailPlaza.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1240,7 +1240,7 @@ PhoenixRetailPlaza.SharesWithdrawn.handler(async ({ event, context }) => {
 // Boston Historic Brownstones SharesWithdrawn
 BostonHistoricBrownstones.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "9",
     propertyName: "Boston Historic Brownstones",
     propertyAddress: "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B",
@@ -1251,7 +1251,7 @@ BostonHistoricBrownstones.SharesWithdrawn.handler(async ({ event, context }) => 
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1261,7 +1261,7 @@ BostonHistoricBrownstones.SharesWithdrawn.handler(async ({ event, context }) => 
 // Nashville Music District SharesWithdrawn
 NashvilleMusicDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "10",
     propertyName: "Nashville Music District",
     propertyAddress: "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3",
@@ -1272,7 +1272,7 @@ NashvilleMusicDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
     action: "withdraw",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
@@ -1286,13 +1286,13 @@ NashvilleMusicDistrict.SharesWithdrawn.handler(async ({ event, context }) => {
 // Manhattan Luxury Apartments PropertyUpdated
 ManhattanLuxuryApartments.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1301,13 +1301,13 @@ ManhattanLuxuryApartments.PropertyUpdated.handler(async ({ event, context }) => 
 // Miami Beach Condos PropertyUpdated
 MiamiBeachCondos.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1316,13 +1316,13 @@ MiamiBeachCondos.PropertyUpdated.handler(async ({ event, context }) => {
 // Austin Tech Hub Office PropertyUpdated
 AustinTechHubOffice.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1331,13 +1331,13 @@ AustinTechHubOffice.PropertyUpdated.handler(async ({ event, context }) => {
 // Seattle Warehouse District PropertyUpdated
 SeattleWarehouseDistrict.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1346,13 +1346,13 @@ SeattleWarehouseDistrict.PropertyUpdated.handler(async ({ event, context }) => {
 // Denver Mountain Resort PropertyUpdated
 DenverMountainResort.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1361,13 +1361,13 @@ DenverMountainResort.PropertyUpdated.handler(async ({ event, context }) => {
 // Chicago Downtown Lofts PropertyUpdated
 ChicagoDowntownLofts.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1376,13 +1376,13 @@ ChicagoDowntownLofts.PropertyUpdated.handler(async ({ event, context }) => {
 // Los Angeles Studio Complex PropertyUpdated
 LosAngelesStudioComplex.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1391,13 +1391,13 @@ LosAngelesStudioComplex.PropertyUpdated.handler(async ({ event, context }) => {
 // Phoenix Retail Plaza PropertyUpdated
 PhoenixRetailPlaza.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1406,13 +1406,13 @@ PhoenixRetailPlaza.PropertyUpdated.handler(async ({ event, context }) => {
 // Boston Historic Brownstones PropertyUpdated
 BostonHistoricBrownstones.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
@@ -1421,13 +1421,13 @@ BostonHistoricBrownstones.PropertyUpdated.handler(async ({ event, context }) => 
 // Nashville Music District PropertyUpdated
 NashvilleMusicDistrict.PropertyUpdated.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: event.params.propertyId.toString(),
     propertyName: event.params.name,
     pricePerShare: event.params.pricePerShare,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyUpdate.set(entity);
