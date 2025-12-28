@@ -345,13 +345,13 @@ USDCToken.Transfer.handler(async ({ event, context }) => {
   if (isSwapRelated) relatedContract = "0xCe3bf5DEd091c822193F14502B724a1bf1040E5C";
   
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     from: event.params.from,
     to: event.params.to,
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
     isPaymentRelated,
     isSwapRelated,
     isPropertyRelated,
@@ -364,13 +364,13 @@ USDCToken.Transfer.handler(async ({ event, context }) => {
 // USDC Approval Event
 USDCToken.Approval.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     owner: event.params.owner,
     spender: event.params.spender,
     value: event.params.value,
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.USDCApproval.set(entity);
@@ -383,7 +383,7 @@ USDCToken.Approval.handler(async ({ event, context }) => {
 // Manhattan Luxury Apartments (#1)
 ManhattanLuxuryApartments.SharesPurchased.handler(async ({ event, context }) => {
   const entity = {
-    id: `${event.transactionHash}_${event.logIndex}`,
+    id: generateEntityId(event),
     propertyId: "1",
     propertyName: "Manhattan Luxury Apartments",
     propertyAddress: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
@@ -394,7 +394,7 @@ ManhattanLuxuryApartments.SharesPurchased.handler(async ({ event, context }) => 
     action: "purchase",
     timestamp: event.block.timestamp,
     blockNumber: event.block.number,
-    transactionHash: event.transactionHash,
+    transactionHash: getTransactionHash(event),
   };
 
   context.PropertyTransaction.set(entity);
