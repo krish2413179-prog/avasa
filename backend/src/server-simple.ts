@@ -25,14 +25,47 @@ app.use(express.json())
 const privateKey = process.env.PRIVATE_KEY!
 const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org'
 
-console.log('🤖 Payment Executor Agent initialized')
+console.log('🤖 Payment Executor Agent initialized (auto-start disabled for debugging)')
 const paymentExecutor = initializePaymentExecutor(privateKey, rpcUrl)
+// Temporarily disable auto-start to reduce log noise
+// paymentExecutor.start().catch(console.error)
 
 // Friends management routes
 app.use('/api/friends', friendsRoutes)
 
 // Analytics routes powered by Envio indexer (temporarily disabled)
 // app.use('/api/analytics', analyticsRoutes)
+
+// Recurring investment tracking endpoint
+app.get('/api/recurring-investments/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    console.log('📊 Fetching recurring investment data for:', address);
+    
+    // This would normally query the blockchain for PaymentExecuted events
+    // For now, return the calculated data from our analysis
+    const investmentData = {
+      '0x24c80f19649c0Da8418011eF0B6Ed3e22007758c': {
+        '1': { amount: '$200', shares: '2.0%', executionCount: 28, type: 'recurring' },
+        '2': { amount: '$40', shares: '0.4%', executionCount: 4, type: 'recurring' }
+      }
+    };
+    
+    const userInvestments = investmentData[address.toLowerCase()] || {};
+    
+    res.json({
+      success: true,
+      address,
+      investments: userInvestments,
+      lastUpdate: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error fetching recurring investments:', error);
+    res.status(500).json({ error: 'Failed to fetch recurring investment data' });
+  }
+});
 
 // AI parser endpoint for frontend compatibility
 app.post('/api/parse', async (req, res) => {

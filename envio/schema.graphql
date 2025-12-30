@@ -1,226 +1,293 @@
-# PropChain AI - Hyper-Speed Portfolio Tracking Schema
-# Real-time GraphQL schema for instant portfolio queries
+# 🏆 Real-Time Financial Engine Schema
+# Transforms raw blockchain events into meaningful financial intelligence
 
-# ========================================
-# RWA PROPERTY ENTITIES
-# ========================================
-
-type PropertyUpdate @entity {
-  id: ID!
-  propertyId: String!
-  propertyName: String!
-  pricePerShare: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
+# ===== USER INTELLIGENCE =====
+type User @entity {
+  id: ID! # User wallet address
+  
+  # 🧠 Computed Intelligence Fields
+  creditScore: Int! # Gamified score based on payment history
+  totalRentPaid: BigInt! # Total USDC paid across all properties
+  totalEquityEarned: BigInt! # Total property equity accumulated
+  activeStreams: Int! # Number of active recurring payments
+  
+  # 📊 Performance Metrics
+  onTimePayments: Int! # Successful payments made on time
+  latePayments: Int! # Payments that were delayed
+  cancelledStreams: Int! # Number of cancelled payment streams
+  averagePaymentAmount: BigInt! # Average payment size
+  
+  # 🏠 Property Portfolio
+  propertiesOwned: [PropertyOwnership!]! @derivedFrom(field: "user")
+  paymentSchedules: [PaymentSchedule!]! @derivedFrom(field: "payer")
+  
+  # ⏰ Timestamps
+  firstPaymentDate: BigInt # When user made their first payment
+  lastPaymentDate: BigInt # Most recent payment
+  createdAt: BigInt!
+  updatedAt: BigInt!
 }
 
-type TransferTransaction @entity {
-  id: ID!
-  propertyId: String!
-  propertyName: String!
-  propertyAddress: String!
-  from: String!
-  to: String!
-  value: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
+# ===== PROPERTY INTELLIGENCE =====
+type Property @entity {
+  id: ID! # Property contract address
+  
+  # 📍 Property Details
+  name: String!
+  location: String!
+  propertyType: PropertyType!
+  contractAddress: String!
+  
+  # 💰 Financial Performance
+  totalRevenue: BigInt! # Total USDC collected from this property
+  totalInvestors: Int! # Number of unique investors
+  occupancyRate: Float! # Percentage of units/shares occupied
+  averageRentPerUnit: BigInt! # Average rent per unit/share
+  
+  # 📈 Performance Metrics
+  monthlyRevenue: BigInt! # Revenue in the last 30 days
+  revenueGrowthRate: Float! # Month-over-month growth
+  investorRetentionRate: Float! # Percentage of investors who stay
+  
+  # 🏠 Ownership Tracking
+  totalShares: BigInt! # Total shares available
+  sharesOwned: BigInt! # Total shares currently owned by investors
+  sharePrice: BigInt! # Current price per share
+  
+  # 👥 Relationships
+  owners: [PropertyOwnership!]! @derivedFrom(field: "property")
+  paymentSchedules: [PaymentSchedule!]! @derivedFrom(field: "property")
+  
+  # ⏰ Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
 }
 
-type PropertyTransaction @entity {
-  id: ID!
-  propertyId: String!
-  propertyName: String!
-  propertyAddress: String!
-  investor: String!
-  shares: BigInt
-  cost: BigInt
-  amount: BigInt
-  action: String! # "purchase", "withdraw", "yield_claim"
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  HOSPITALITY
+  MIXED_USE
 }
 
-type YieldTransaction @entity {
-  id: ID!
-  propertyId: String!
-  propertyName: String!
-  propertyAddress: String!
-  investor: String!
+# ===== OWNERSHIP INTELLIGENCE =====
+type PropertyOwnership @entity {
+  id: ID! # user_address + property_address
+  
+  user: User!
+  property: Property!
+  
+  # 📊 Ownership Details
+  sharesOwned: BigInt! # Number of shares owned
+  ownershipPercentage: Float! # Percentage of total property owned
+  totalInvested: BigInt! # Total USDC invested in this property
+  currentEquityValue: BigInt! # Current value of ownership
+  
+  # 📈 Performance Tracking
+  unrealizedGains: BigInt! # Profit/loss on investment
+  yieldEarned: BigInt! # Total yield/rent received
+  averageMonthlyYield: BigInt! # Average monthly yield
+  
+  # ⏰ Investment Timeline
+  firstInvestmentDate: BigInt!
+  lastInvestmentDate: BigInt!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+# ===== PAYMENT SCHEDULE INTELLIGENCE =====
+type PaymentSchedule @entity {
+  id: ID! # Schedule ID from contract
+  
+  # 👥 Participants
+  payer: User!
+  recipient: String! # Recipient address
+  property: Property # Associated property (if applicable)
+  
+  # 💰 Payment Details
+  amount: BigInt! # Payment amount per execution
+  interval: BigInt! # Interval in seconds
+  maxExecutions: Int! # Maximum number of executions
+  executionsLeft: Int! # Remaining executions
+  
+  # 📊 Status & Performance
+  isActive: Boolean!
+  totalExecuted: Int! # Number of successful executions
+  totalAmountPaid: BigInt! # Total USDC paid through this schedule
+  
+  # ⏰ Timing
+  nextPaymentDue: BigInt! # When next payment is due
+  createdAt: BigInt!
+  lastExecutedAt: BigInt
+  
+  # 🔗 Relationships
+  executions: [PaymentExecution!]! @derivedFrom(field: "schedule")
+}
+
+# ===== PAYMENT EXECUTION INTELLIGENCE =====
+type PaymentExecution @entity {
+  id: ID! # Transaction hash + log index
+  
+  schedule: PaymentSchedule!
+  
+  # 💰 Execution Details
   amount: BigInt!
-  action: String! # "yield_claim", "yield_distribution"
-  timestamp: BigInt!
-  blockNumber: BigInt!
+  executorReward: BigInt!
+  executor: String! # Address of executor
+  
+  # 📊 Performance Metrics
+  gasUsed: BigInt!
+  gasPrice: BigInt!
+  executionDelay: BigInt! # How late was this payment (0 = on time)
+  
+  # 🔗 Transaction Details
   transactionHash: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }
 
-type UserPortfolio @entity {
-  id: ID! # Format: "{user}_{propertyId}"
-  user: String!
-  propertyId: String!
-  totalShares: BigInt!
-  totalInvested: BigInt!
-  totalYieldClaimed: BigInt!
+# ===== GLOBAL PROTOCOL INTELLIGENCE =====
+type ProtocolStats @entity {
+  id: ID! # Always "global"
+  
+  # 🌍 Global Volume Metrics
+  totalVolumeStreaming: BigInt! # Total USDC currently being streamed
+  totalVolumeAllTime: BigInt! # All-time volume processed
+  totalExecutions: BigInt! # Total number of payment executions
+  
+  # 👥 User Metrics
+  totalUsers: Int! # Total number of users
+  activeUsers: Int! # Users with active streams
+  newUsersToday: Int! # New users in last 24 hours
+  
+  # 🏠 Property Metrics
+  totalProperties: Int! # Total number of properties
+  totalPropertyValue: BigInt! # Combined value of all properties
+  averageOccupancyRate: Float! # Average occupancy across all properties
+  
+  # 📈 Performance Metrics
+  averageCreditScore: Float! # Average user credit score
+  totalEquityGenerated: BigInt! # Total equity generated for users
+  protocolRevenue: BigInt! # Total protocol fees collected
+  
+  # ⏰ Time-based Metrics
+  dailyVolume: BigInt! # Volume in last 24 hours
+  weeklyVolume: BigInt! # Volume in last 7 days
+  monthlyVolume: BigInt! # Volume in last 30 days
+  
+  # 🔄 Real-time Status
   lastUpdated: BigInt!
 }
 
-# ========================================
-# DEFI PROTOCOL ENTITIES
-# ========================================
-
-type SwapTransaction @entity {
-  id: ID!
-  sender: String!
-  recipient: String!
-  amount0: BigInt!
-  amount1: BigInt!
-  sqrtPriceX96: BigInt!
-  liquidity: BigInt!
-  tick: Int!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
-}
-
-type StreamTransaction @entity {
-  id: ID!
-  token: String!
-  sender: String!
-  receiver: String!
-  flowRate: BigInt!
-  totalSenderFlowRate: BigInt!
-  totalReceiverFlowRate: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: String!
-}
-
-type LendingTransaction @entity {
-  id: ID!
-  reserve: String!
-  user: String!
-  onBehalfOf: String
-  repayer: String
+# ===== REAL-TIME EVENTS =====
+type StreamCreated @entity {
+  id: ID! # Transaction hash + log index
+  
+  user: User!
+  property: Property
+  schedule: PaymentSchedule!
+  
   amount: BigInt!
-  interestRateMode: Int
-  borrowRate: BigInt
-  referralCode: Int
-  useATokens: Boolean
-  action: String! # "supply", "borrow", "repay"
-  timestamp: BigInt!
-  blockNumber: BigInt!
+  interval: BigInt!
+  maxExecutions: Int!
+  
   transactionHash: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }
 
-# ========================================
-# AGGREGATED ANALYTICS ENTITIES
-# ========================================
-
-type UserAnalytics @entity {
-  id: ID! # User address
-  totalPropertiesOwned: Int!
-  totalInvested: BigInt!
-  totalYieldEarned: BigInt!
-  totalSwapVolume: BigInt!
-  totalStreamsSent: BigInt!
-  totalStreamsReceived: BigInt!
-  totalLent: BigInt!
-  totalBorrowed: BigInt!
-  lastActivity: BigInt!
+type StreamExecuted @entity {
+  id: ID! # Transaction hash + log index
+  
+  user: User!
+  property: Property
+  execution: PaymentExecution!
+  
+  amount: BigInt!
+  newEquityEarned: BigInt! # Equity earned from this payment
+  newCreditScore: Int! # Updated credit score
+  
+  transactionHash: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }
 
-type PropertyAnalytics @entity {
-  id: ID! # Property ID
-  propertyName: String!
-  propertyAddress: String!
-  totalInvestors: Int!
-  totalSharesSold: BigInt!
-  totalValueLocked: BigInt!
-  totalYieldDistributed: BigInt!
-  averageYieldRate: BigInt!
-  lastActivity: BigInt!
+type StreamCancelled @entity {
+  id: ID! # Transaction hash + log index
+  
+  user: User!
+  property: Property
+  schedule: PaymentSchedule!
+  
+  reason: String # Cancellation reason
+  amountPaidBeforeCancellation: BigInt!
+  
+  transactionHash: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }
 
-type DailyMetrics @entity {
-  id: ID! # Format: "YYYY-MM-DD"
+# ===== ANALYTICS & INSIGHTS =====
+type DailyStats @entity {
+  id: ID! # Date in YYYY-MM-DD format
+  
   date: String!
-  totalTransactions: Int!
+  
+  # 📊 Daily Metrics
   totalVolume: BigInt!
-  uniqueUsers: Int!
-  newInvestors: Int!
-  totalYieldClaimed: BigInt!
-  totalSwapVolume: BigInt!
-  activeStreams: Int!
-  totalLendingVolume: BigInt!
-}
-
-# ========================================
-# REAL-TIME PORTFOLIO VIEWS
-# ========================================
-
-type LivePortfolio @entity {
-  id: ID! # User address
-  user: String!
-  totalValue: BigInt!
-  totalYield: BigInt!
-  portfolioYieldRate: BigInt!
-  diversificationScore: Int!
-  riskScore: Int!
-  lastUpdated: BigInt!
-}
-
-type PropertyPerformance @entity {
-  id: ID! # Property ID
-  propertyId: String!
-  propertyName: String!
-  currentPrice: BigInt!
-  priceChange24h: BigInt!
-  volume24h: BigInt!
-  yieldRate: BigInt!
-  totalInvestors: Int!
-  marketCap: BigInt!
-  lastUpdated: BigInt!
-}
-
-# ========================================
-# AI AGENT OPTIMIZATION ENTITIES
-# ========================================
-
-type UserPreferences @entity {
-  id: ID! # User address
-  user: String!
-  preferredRiskLevel: String! # "conservative", "balanced", "aggressive"
-  preferredPropertyTypesJson: String! # JSON string of array
-  maxInvestmentPerProperty: BigInt!
-  autoReinvestYield: Boolean!
-  notificationSettings: String!
-  lastUpdated: BigInt!
-}
-
-type AIRecommendation @entity {
-  id: ID!
-  user: String!
-  recommendationType: String! # "buy", "sell", "rebalance", "claim_yield"
-  propertyId: String
-  amount: BigInt
-  confidence: Int! # 0-100
-  reasoning: String!
-  expectedReturn: BigInt
-  riskLevel: String!
+  totalExecutions: Int!
+  newUsers: Int!
+  activeUsers: Int!
+  
+  # 🏠 Property Performance
+  bestPerformingProperty: String! # Property with highest volume
+  worstPerformingProperty: String! # Property with lowest volume
+  
+  # 💰 Financial Metrics
+  totalEquityGenerated: BigInt!
+  averagePaymentSize: BigInt!
+  protocolFees: BigInt!
+  
   timestamp: BigInt!
-  executed: Boolean!
 }
 
-type MarketTrend @entity {
-  id: ID! # Format: "trend_{timestamp}"
-  trendType: String! # "bullish", "bearish", "sideways"
-  propertyId: String
-  priceDirection: String!
-  volumeChange: BigInt!
-  yieldTrend: String!
-  confidence: Int!
-  timeframe: String! # "1h", "24h", "7d", "30d"
+type UserCreditHistory @entity {
+  id: ID! # user_address + timestamp
+  
+  user: User!
+  
+  # 📊 Credit Score Evolution
+  creditScore: Int!
+  scoreChange: Int! # Change from previous score
+  reason: String! # Why score changed
+  
+  # 📈 Performance Context
+  totalPayments: Int! # Total payments at this point
+  onTimePaymentRate: Float! # Percentage of on-time payments
+  
+  timestamp: BigInt!
+}
+
+# ===== PROPERTY PERFORMANCE TRACKING =====
+type PropertyPerformance @entity {
+  id: ID! # property_address + month (YYYY-MM)
+  
+  property: Property!
+  month: String! # YYYY-MM format
+  
+  # 📊 Monthly Performance
+  monthlyRevenue: BigInt!
+  monthlyInvestors: Int!
+  occupancyRate: Float!
+  
+  # 📈 Growth Metrics
+  revenueGrowth: Float! # Compared to previous month
+  investorGrowth: Float! # Investor count growth
+  
+  # 🏆 Rankings
+  revenueRank: Int! # Rank among all properties this month
+  growthRank: Int! # Growth rank among all properties
+  
   timestamp: BigInt!
 }

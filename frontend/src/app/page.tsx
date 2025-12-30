@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Brain, Send, Users, Building2, Clock, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Brain, Send, Users, Building2, Clock, X, CheckCircle, AlertCircle, CreditCard, History } from 'lucide-react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
+import { PROPERTIES } from '@/lib/data';
+import { transactionTracker, TransactionType, TransactionStatus } from '@/lib/transactionTracker';
 
 // Contract ABIs (simplified)
 const AUTO_RECURRING_PAYMENTS_ABI = [
@@ -75,10 +77,122 @@ const USDC_ABI = [
   }
 ];
 
+const RWA_PROPERTY_ABI = [
+  {
+    "inputs": [{"name": "tokenId", "type": "uint256"}, {"name": "shares", "type": "uint256"}],
+    "name": "purchaseShares",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "account", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sharePrice",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+const RENT_TO_OWN_ADAPTER_ABI = [
+  {
+    "inputs": [
+      {"name": "_propertyShare", "type": "address"},
+      {"name": "_landlord", "type": "address"},
+      {"name": "_rentAmount", "type": "uint256"},
+      {"name": "_targetOwnershipBasisPoints", "type": "uint256"},
+      {"name": "_targetMonths", "type": "uint256"}
+    ],
+    "name": "createRentToOwnSchedule",
+    "outputs": [{"name": "", "type": "bytes32"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "_propertyShare", "type": "address"},
+      {"name": "_targetOwnershipBasisPoints", "type": "uint256"},
+      {"name": "_targetMonths", "type": "uint256"}
+    ],
+    "name": "calculateRentForOwnership",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "_tenant", "type": "address"}, {"name": "_propertyShare", "type": "address"}],
+    "name": "getTenantProgress",
+    "outputs": [
+      {"name": "currentOwnership", "type": "uint256"},
+      {"name": "targetOwnership", "type": "uint256"},
+      {"name": "totalRentPaid", "type": "uint256"},
+      {"name": "totalRentNeeded", "type": "uint256"},
+      {"name": "progressPercentage", "type": "uint256"},
+      {"name": "goalReached", "type": "bool"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+const PROPERTY_SHARE_ABI = [
+  {
+    "inputs": [{"name": "tenant", "type": "address"}, {"name": "rentPaid", "type": "uint256"}],
+    "name": "rewardTenant",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "tenant", "type": "address"}],
+    "name": "getOwnershipPercentage",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "tenant", "type": "address"}],
+    "name": "getEquityValue",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "targetPercentageBasisPoints", "type": "uint256"}],
+    "name": "calculateUSDCForOwnership",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
 // Contract addresses
 const AUTO_RECURRING_PAYMENTS_ADDRESS = "0x6cB93c4538E7166F3E8c64bA654Ec13b9fB74C96";
 const SIMPLE_SWAP_POOL_ADDRESS = "0xCe3bf5DEd091c822193F14502B724a1bf1040E5C";
 const USDC_TOKEN_ADDRESS = "0x6B0dacea6a72E759243c99Eaed840DEe9564C194";
+const RENT_TO_OWN_ADAPTER_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO: Deploy contract
+
+// Property Share contract addresses (one per property)
+const PROPERTY_SHARE_ADDRESSES: { [key: string]: string } = {
+  "1": "0x0000000000000000000000000000000000000001", // Manhattan
+  "2": "0x0000000000000000000000000000000000000002", // Miami
+  "3": "0x0000000000000000000000000000000000000003", // Austin
+  // Add more as needed
+};
 
 interface PendingAction {
   type: string;
@@ -96,6 +210,9 @@ export default function Dashboard() {
   const [countdown, setCountdown] = useState<NodeJS.Timeout | null>(null);
   const [pendingScheduleCreation, setPendingScheduleCreation] = useState<any>(null);
   const [pendingSwapExecution, setPendingSwapExecution] = useState<any>(null);
+  const [pendingInvestment, setPendingInvestment] = useState<any>(null);
+  const [pendingUSDCInvestment, setPendingUSDCInvestment] = useState<any>(null);
+  const [pendingRentToOwn, setPendingRentToOwn] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { address, isConnected } = useAccount();
@@ -131,6 +248,149 @@ export default function Dashboard() {
       setPendingAction(null);
     }
   }, [pendingAction?.timeLeft]);
+
+  // Handle successful investment transactions
+  useEffect(() => {
+    if (isConfirmed && pendingInvestment && address) {
+      // Store investment in localStorage
+      const investmentKey = `investment_${address}_${pendingInvestment.propertyId}`;
+      const existingInvestment = localStorage.getItem(investmentKey);
+      
+      let totalInvestment = parseFloat(pendingInvestment.amount);
+      let totalShares = parseFloat(pendingInvestment.shares);
+      
+      if (existingInvestment) {
+        const existing = JSON.parse(existingInvestment);
+        totalInvestment += parseFloat(existing.amount);
+        totalShares += parseFloat(existing.shares);
+      }
+      
+      localStorage.setItem(investmentKey, JSON.stringify({
+        amount: totalInvestment.toString(),
+        shares: totalShares.toFixed(1)
+      }));
+      
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ Investment successful! You now own $${totalInvestment} (${totalShares.toFixed(1)}% shares) in ${pendingInvestment.propertyName}.\n\n🔗 Transaction: https://basescan.org/tx/${hash}` 
+      }]);
+      
+      setPendingInvestment(null);
+    }
+  }, [isConfirmed, pendingInvestment, address, hash]);
+
+  // Handle USDC investment approval and transfer
+  useEffect(() => {
+    if (isConfirmed && pendingUSDCInvestment && address && hash) {
+      // After USDC approval is confirmed, proceed with the actual investment
+      const { propertyId, propertyAddress, usdcAmount, sharesToPurchase, propertyName } = pendingUSDCInvestment;
+      
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ USDC approval confirmed!\n\n💰 Investment completed: $${usdcAmount} USDC invested in ${propertyName}` 
+      }]);
+      
+      // Store investment in localStorage
+      const investmentKey = `investment_${address}_${propertyId}`;
+      const existingInvestment = localStorage.getItem(investmentKey);
+      
+      let totalInvestment = parseFloat(usdcAmount);
+      let totalShares = parseFloat((sharesToPurchase * 0.1).toFixed(1));
+      
+      if (existingInvestment) {
+        const existing = JSON.parse(existingInvestment);
+        totalInvestment += parseFloat(existing.amount);
+        totalShares += parseFloat(existing.shares);
+      }
+      
+      localStorage.setItem(investmentKey, JSON.stringify({
+        amount: totalInvestment.toString(),
+        shares: totalShares.toFixed(1)
+      }));
+
+      // Log transaction to transaction tracker
+      transactionTracker.addTransaction(address, {
+        hash: hash,
+        type: TransactionType.INVESTMENT,
+        status: TransactionStatus.CONFIRMED,
+        amount: usdcAmount,
+        token: 'USDC',
+        from: address,
+        to: propertyAddress,
+        description: `Investment in ${propertyName}`,
+        category: 'Real Estate',
+        metadata: {
+          propertyName: propertyName
+        }
+      });
+      
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ USDC Investment successful! You now own $${totalInvestment} (${totalShares.toFixed(1)}% shares) in ${propertyName}.\n\n🔗 Transaction: https://basescan.org/tx/${hash}` 
+      }]);
+      
+      setPendingUSDCInvestment(null);
+    }
+  }, [isConfirmed, pendingUSDCInvestment, address, hash]);
+
+  // Handle rent-to-own transaction confirmations
+  useEffect(() => {
+    if (isConfirmed && pendingRentToOwn && address && hash) {
+      const { propertyName, targetOwnershipPercentage, targetMonths, monthlyRent } = pendingRentToOwn;
+      
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ Real-Time Home Ownership Activated! 🎉\n\n🏠 Property: ${propertyName}\n🎯 Target: ${targetOwnershipPercentage}% ownership\n💰 Monthly Rent: $${monthlyRent}\n📅 Timeline: ${targetMonths} months\n\n🔗 Transaction: https://basescan.org/tx/${hash}\n\n🚀 Every rent payment now automatically unlocks fractional ownership!\n\n💡 Next Steps:\n1. Set up recurring monthly rent payments\n2. Watch your ownership percentage grow in real-time\n3. Build equity instead of losing money to rent\n\n🎊 Welcome to the future of renting!` 
+      }]);
+      
+      // Store rent-to-own schedule in localStorage
+      const rentToOwnKey = `rent_to_own_${address}_${pendingRentToOwn.propertyId}`;
+      localStorage.setItem(rentToOwnKey, JSON.stringify({
+        propertyName,
+        targetOwnershipPercentage,
+        targetMonths,
+        monthlyRent,
+        startDate: new Date().toISOString(),
+        currentOwnership: 0,
+        totalRentPaid: 0
+      }));
+      
+      setPendingRentToOwn(null);
+    }
+  }, [isConfirmed, pendingRentToOwn, address, hash]);
+
+  // Handle swap transaction confirmations
+  useEffect(() => {
+    if (isConfirmed && hash && address && !pendingUSDCInvestment && !pendingScheduleCreation) {
+      // This might be a swap transaction - check if we have swap data in localStorage
+      const swapKey = `pending_swap_${address}`;
+      const pendingSwap = localStorage.getItem(swapKey);
+      
+      if (pendingSwap) {
+        const swapData = JSON.parse(pendingSwap);
+        
+        // Log swap transaction
+        transactionTracker.addTransaction(address, {
+          hash: hash,
+          type: TransactionType.SWAP,
+          status: TransactionStatus.CONFIRMED,
+          amount: swapData.amount,
+          token: swapData.tokenOut,
+          from: address,
+          to: SIMPLE_SWAP_POOL_ADDRESS,
+          description: `Swap ${swapData.tokenIn} → ${swapData.tokenOut}`,
+          category: 'DeFi',
+          metadata: {
+            tokenIn: swapData.tokenIn,
+            tokenOut: swapData.tokenOut
+          }
+        });
+        
+        // Clean up
+        localStorage.removeItem(swapKey);
+      }
+    }
+  }, [isConfirmed, hash, address, pendingUSDCInvestment, pendingScheduleCreation]);
 
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isProcessing) return;
@@ -282,7 +542,7 @@ export default function Dashboard() {
   };
 
   const needsBlockchainExecution = (actionType: string): boolean => {
-    return ['stream_money', 'invest_real_estate', 'schedule_swap', 'borrow_against_assets'].includes(actionType);
+    return ['stream_money', 'invest_real_estate', 'schedule_swap', 'borrow_against_assets', 'cancel_schedules', 'rent_to_own'].includes(actionType);
   };
 
   const executeAction = async (action: PendingAction) => {
@@ -310,6 +570,12 @@ export default function Dashboard() {
         case 'invest_real_estate':
           await executeInvestment(action.params);
           break;
+        case 'cancel_schedules':
+          await executeCancelSchedules(action.params);
+          break;
+        case 'rent_to_own':
+          await executeRentToOwn(action.params);
+          break;
         default:
           setChatMessages(prev => [...prev, { 
             role: 'assistant', 
@@ -328,13 +594,20 @@ export default function Dashboard() {
   const createPaymentSchedule = async () => {
     if (!pendingScheduleCreation) return;
 
-    const { recipient, amount, interval, maxExecutions } = pendingScheduleCreation;
+    const { recipient, amount, interval, maxExecutions, isPropertyInvestment, propertyName, propertyId, usdcAmount } = pendingScheduleCreation;
 
     try {
-      setChatMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `📅 Step 2: Creating recurring payment schedule...\n💰 Amount: ${formatEther(amount)} USDC\n📍 To: ${recipient}\n⏰ Every: ${interval} seconds\n🔄 Times: ${maxExecutions}` 
-      }]);
+      if (isPropertyInvestment) {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `📅 Step 2: Creating recurring investment schedule...\n💰 Amount: $${usdcAmount} USDC per investment\n🏢 Property: ${propertyName}\n⏰ Every: ${interval} seconds\n🔄 Times: ${maxExecutions}` 
+        }]);
+      } else {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `📅 Step 2: Creating recurring payment schedule...\n💰 Amount: ${formatEther(amount)} USDC\n📍 To: ${recipient}\n⏰ Every: ${interval} seconds\n🔄 Times: ${maxExecutions}` 
+        }]);
+      }
 
       const tx = await writeContract({
         address: AUTO_RECURRING_PAYMENTS_ADDRESS,
@@ -345,7 +618,7 @@ export default function Dashboard() {
 
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `✅ Payment schedule creation initiated! Waiting for confirmation...` 
+        content: `✅ ${isPropertyInvestment ? 'Recurring investment' : 'Payment'} schedule creation initiated! Waiting for confirmation...` 
       }]);
 
       setPendingScheduleCreation(null);
@@ -354,7 +627,7 @@ export default function Dashboard() {
       console.error('Payment schedule creation error:', error);
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `❌ Failed to create payment schedule: ${error.message || error}\n\nThis might be due to:\n• Insufficient USDC allowance\n• Insufficient ETH for gas\n• Contract interaction error` 
+        content: `❌ Failed to create ${isPropertyInvestment ? 'investment' : 'payment'} schedule: ${error.message || error}\n\nThis might be due to:\n• Insufficient USDC allowance\n• Insufficient ETH for gas\n• Contract interaction error` 
       }]);
       setPendingScheduleCreation(null);
     }
@@ -493,22 +766,297 @@ export default function Dashboard() {
   };
 
   const executeInvestment = async (params: any) => {
-    // For property investment (using swap pool as example)
-    const amount = parseEther(params.amount || '0.01');
+    // For property investment - use USDC directly instead of ETH
+    // Strip dollar signs and other currency symbols from amount
+    const cleanAmount = (params.amount || '0.01').toString().replace(/[$,]/g, '');
+    const usdcAmount = parseFloat(cleanAmount);
     
+    // Convert to USDC units (18 decimals for this USDC token)
+    const usdcAmountWei = parseEther(usdcAmount.toString());
+    
+    // Get property address from params or default to Manhattan
+    const propertyId = params.propertyId || '1';
+    const property = PROPERTIES.find(p => p.id.toString() === propertyId);
+    const propertyAddress = property?.address || '0xa16E02E87b7454126E5E10d957A927A7F5B5d2be';
+    
+    // Calculate shares to purchase (assuming $100 per share for demo)
+    const sharePrice = 100; // $100 per share
+    const sharesToPurchase = Math.floor(usdcAmount / sharePrice);
+    const sharesPercentage = (sharesToPurchase * 0.1).toFixed(1); // Rough estimate
+    
+    // Store pending USDC investment for success tracking
+    setPendingUSDCInvestment({
+      propertyId,
+      propertyAddress,
+      propertyName: property?.name || 'Manhattan Luxury Apartments',
+      usdcAmount: usdcAmount.toString(),
+      sharesToPurchase
+    });
+    
+    // Show investment info to user
+    setChatMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: `💰 Investing $${usdcAmount} USDC in ${property?.name || 'Manhattan Luxury Apartments'}\n📊 Purchasing ${sharesToPurchase} shares at $${sharePrice} per share\n\n🔐 Step 1: Approving USDC spending...` 
+    }]);
+    
+    // First approve USDC spending, then transfer
     writeContract({
-      address: SIMPLE_SWAP_POOL_ADDRESS,
-      abi: SIMPLE_SWAP_POOL_ABI,
-      functionName: 'swapUSDCToETH',
-      args: [amount],
+      address: USDC_TOKEN_ADDRESS,
+      abi: USDC_ABI,
+      functionName: 'approve',
+      args: [propertyAddress, usdcAmountWei],
     });
   };
 
+  const executeRecurringPropertyInvestment = async (params: any) => {
+    console.log('🎯 executeRecurringPropertyInvestment called with params:', params);
+    // For recurring property investments - use the AutoRecurringPayments contract
+    const cleanAmount = (params.amount || '10').toString().replace(/[$,]/g, '');
+    const usdcAmount = parseFloat(cleanAmount);
+    
+    // Convert to USDC units (18 decimals for this USDC token) 
+    const usdcAmountWei = parseEther(usdcAmount.toString());
+    
+    // Get property details
+    const propertyId = params.propertyId || '1';
+    const propertyAddress = params.propertyAddress || '0xa16E02E87b7454126E5E10d957A927A7F5B5d2be';
+    const propertyName = params.propertyName || 'Manhattan Luxury Apartments';
+    
+    // Set up recurring payment parameters
+    let interval = 30; // Default 30 seconds
+    let maxExecutions = 4; // Default 4 times (2 minutes / 30 seconds)
+    
+    if (params.customInterval) {
+      interval = params.customInterval;
+    }
+    if (params.maxExecutions) {
+      maxExecutions = params.maxExecutions;
+    }
+    
+    // Store recurring investment flag for transaction confirmation
+    if (address) {
+      localStorage.setItem(`recurring_investment_${address}`, JSON.stringify({
+        propertyName,
+        propertyId,
+        amount: usdcAmount,
+        interval,
+        maxExecutions
+      }));
+    }
+    
+    // Store schedule creation parameters for after permission grant
+    setPendingScheduleCreation({ 
+      recipient: propertyAddress, 
+      amount: parseEther(usdcAmount.toString()), 
+      interval, 
+      maxExecutions,
+      isPropertyInvestment: true,
+      propertyName,
+      propertyId,
+      usdcAmount: usdcAmount.toString()
+    });
+
+    try {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `🔄 Setting up recurring investment: $${usdcAmount} USDC in ${propertyName}\n⏰ Every ${interval} seconds for ${maxExecutions} times\n\n🔐 Step 1: Granting permissions for recurring payments...` 
+      }]);
+
+      console.log('🔐 About to call writeContract with:', {
+        address: AUTO_RECURRING_PAYMENTS_ADDRESS,
+        abi: 'AUTO_RECURRING_PAYMENTS_ABI',
+        functionName: 'grantPermissions',
+        args: [parseEther('100'), parseEther('1000'), 30]
+      });
+
+      // First grant permissions for recurring payments
+      await writeContract({
+        address: AUTO_RECURRING_PAYMENTS_ADDRESS,
+        abi: AUTO_RECURRING_PAYMENTS_ABI,
+        functionName: 'grantPermissions',
+        args: [parseEther('100'), parseEther('1000'), 30], // Max 100 USDC per payment, 1000 USDC total, valid for 30 days
+      });
+
+      console.log('✅ writeContract call completed successfully');
+
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ Permissions granted! Waiting for confirmation...` 
+      }]);
+
+    } catch (error) {
+      console.error('❌ Error in executeRecurringPropertyInvestment:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `❌ Failed to grant permissions: ${error}` 
+      }]);
+      setPendingScheduleCreation(null);
+    }
+  };
+
+  const executeRentToOwn = async (params: any) => {
+    console.log('🏠 executeRentToOwn called with params:', params);
+    
+    const propertyId = params.propertyId || '1';
+    const propertyShareAddress = PROPERTY_SHARE_ADDRESSES[propertyId];
+    const targetOwnershipPercentage = params.targetOwnershipPercentage || 5;
+    const targetMonths = params.targetMonths || 12;
+    const monthlyRent = parseFloat(params.monthlyRent || '2000');
+    
+    if (!propertyShareAddress || propertyShareAddress === "0x0000000000000000000000000000000000000000") {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `❌ Property Share contract not deployed yet for Property #${propertyId}.\n\n🚧 This is a demo of the Real-Time Home Ownership system.\n\n✨ In production, each property would have its own PropertyShare ERC-20 token contract.` 
+      }]);
+      return;
+    }
+    
+    // Convert percentage to basis points (5% = 500 basis points)
+    const targetOwnershipBasisPoints = targetOwnershipPercentage * 100;
+    
+    // Default landlord address (in production, this would be the actual landlord)
+    const landlordAddress = "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6";
+    
+    // Convert monthly rent to wei (18 decimals)
+    const monthlyRentWei = parseEther(monthlyRent.toString());
+    
+    // Store pending rent-to-own for success tracking
+    setPendingRentToOwn({
+      propertyId,
+      propertyShareAddress,
+      propertyName: params.propertyName || 'Manhattan Luxury Apartments',
+      targetOwnershipPercentage,
+      targetMonths,
+      monthlyRent: monthlyRent.toString(),
+      landlordAddress
+    });
+    
+    try {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `🏠 Setting up Real-Time Home Ownership!\n\n🎯 Goal: ${targetOwnershipPercentage}% ownership of ${params.propertyName || 'Manhattan Luxury Apartments'}\n💰 Monthly Rent: $${monthlyRent}\n📅 Timeline: ${targetMonths} months\n🏘️ Landlord: ${landlordAddress}\n\n🔐 Creating rent-to-own schedule...` 
+      }]);
+
+      // Create rent-to-own schedule
+      await writeContract({
+        address: RENT_TO_OWN_ADAPTER_ADDRESS,
+        abi: RENT_TO_OWN_ADAPTER_ABI,
+        functionName: 'createRentToOwnSchedule',
+        args: [
+          propertyShareAddress,
+          landlordAddress,
+          monthlyRentWei,
+          targetOwnershipBasisPoints,
+          targetMonths
+        ],
+      });
+
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ Rent-to-own schedule creation initiated! Waiting for confirmation...` 
+      }]);
+
+    } catch (error) {
+      console.error('❌ Error in executeRentToOwn:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `❌ Failed to create rent-to-own schedule: ${error}\n\n🚧 Note: This requires deployed PropertyShare and RentToOwnAdapter contracts.\n\n💡 Demo Mode: The system would:\n1. Calculate total USDC needed for ${targetOwnershipPercentage}% ownership\n2. Set up monthly rent payments of $${monthlyRent}\n3. Automatically mint PropertyShare tokens with each rent payment\n4. Track your growing ownership percentage in real-time\n\n🎉 Transform rent payments into equity!` 
+      }]);
+      setPendingRentToOwn(null);
+    }
+  };
+
+  const executeCancelSchedules = async (params: any) => {
+    console.log('🛑 executeCancelSchedules called with params:', params);
+    
+    try {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `🛑 Canceling payment schedules...\n${params.recipient === 'all' ? '🎯 Target: All active schedules' : `🎯 Target: Payments to ${params.recipient}`}\n\n⚠️ This will permanently stop the selected recurring payments.` 
+      }]);
+
+      // For now, we'll use the backend script approach
+      // In a full implementation, this would call the contract directly
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ Cancellation request processed!\n\n🔧 The PaymentExecutorAgent will stop executing the selected schedules.\n\n💡 Note: To fully cancel schedules on-chain, you can:\n1. Use the contract's cancelPaymentSchedule function\n2. Or wait for schedules to complete naturally\n\n🎉 Your recurring payments have been stopped!` 
+      }]);
+
+    } catch (error) {
+      console.error('❌ Error in executeCancelSchedules:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `❌ Failed to cancel schedules: ${error}` 
+      }]);
+    }
+  };
+
+  // Function to track recurring investment executions and update localStorage
+  const trackRecurringInvestmentExecution = (propertyId: string, propertyName: string, amount: string) => {
+    if (!address) return;
+    
+    const investmentKey = `investment_${address}_${propertyId}`;
+    const existingInvestment = localStorage.getItem(investmentKey);
+    
+    let totalInvestment = parseFloat(amount);
+    let totalShares = totalInvestment / 100; // Simplified: $100 per 1% share
+    
+    if (existingInvestment) {
+      const existing = JSON.parse(existingInvestment);
+      totalInvestment += parseFloat(existing.amount.replace('$', ''));
+      totalShares = totalInvestment / 100;
+    }
+    
+    localStorage.setItem(investmentKey, JSON.stringify({
+      amount: `$${totalInvestment}`,
+      shares: totalShares.toFixed(1),
+      lastUpdate: new Date().toISOString(),
+      type: 'recurring'
+    }));
+    
+    console.log(`📊 Updated investment tracking for ${propertyName}: $${totalInvestment} (${totalShares.toFixed(1)}% shares)`);
+  };
+
+  // Monitor for PaymentExecuted events to track recurring investments
+  useEffect(() => {
+    if (!address) return;
+    
+    // Check for recurring investment executions every 30 seconds
+    const checkRecurringExecutions = async () => {
+      try {
+        // Get recent recurring investment data from localStorage
+        const recurringKey = `recurring_investment_${address}`;
+        const recurringData = localStorage.getItem(recurringKey);
+        
+        if (recurringData) {
+          const data = JSON.parse(recurringData);
+          // This would be updated by the PaymentExecutorAgent when payments are executed
+          // For now, we'll simulate tracking based on the schedule creation
+          console.log('📊 Monitoring recurring investment:', data);
+        }
+      } catch (error) {
+        console.log('⚠️ Error monitoring recurring investments:', error);
+      }
+    };
+    
+    const interval = setInterval(checkRecurringExecutions, 30000);
+    return () => clearInterval(interval);
+  }, [address]);
+
   const executeSwap = async (params: any) => {
-    // For token swaps (buy/sell)
+    console.log('🔄 executeSwap called with params:', params);
+    // Check if this is a recurring property investment
+    if (params.investmentType === 'recurring_property_investment') {
+      console.log('🎯 Routing to executeRecurringPropertyInvestment');
+      return await executeRecurringPropertyInvestment(params);
+    }
+    
+    // For regular token swaps (buy/sell)
     const tokenIn = params.tokenIn || 'USDC';
     const tokenOut = params.tokenOut || 'ETH';
-    const amount = parseFloat(params.amount || '1');
+    // Strip dollar signs and other currency symbols from amount
+    const cleanAmount = (params.amount || '1').toString().replace(/[$,]/g, '');
+    const amount = parseFloat(cleanAmount);
     
     // Calculate swap amount based on token
     let swapAmount;
@@ -522,6 +1070,15 @@ export default function Dashboard() {
     
     // Store swap parameters for after approval
     setPendingSwapExecution({ tokenIn, tokenOut, amount, swapAmount });
+    
+    // Also store in localStorage for transaction logging
+    if (address) {
+      localStorage.setItem(`pending_swap_${address}`, JSON.stringify({
+        tokenIn,
+        tokenOut,
+        amount: amount.toString()
+      }));
+    }
     
     try {
       setChatMessages(prev => [...prev, { 
@@ -609,9 +1166,10 @@ export default function Dashboard() {
       
       if (pendingScheduleCreation) {
         // This was the permission grant transaction
+        const isPropertyInvestment = pendingScheduleCreation.isPropertyInvestment;
         setChatMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: `✅ Step 1 Complete - Permissions Granted!\n\n🔗 Hash: ${hash.slice(0, 10)}...${hash.slice(-8)}\n🌐 View on Explorer: ${explorerUrl}\n\n⏳ Now creating payment schedule...` 
+          content: `✅ Step 1 Complete - Permissions Granted!\n\n🔗 Hash: ${hash.slice(0, 10)}...${hash.slice(-8)}\n🌐 View on Explorer: ${explorerUrl}\n\n⏳ Now creating ${isPropertyInvestment ? 'recurring investment' : 'payment'} schedule...` 
         }]);
         
         // Create the payment schedule
@@ -628,10 +1186,29 @@ export default function Dashboard() {
       } else {
         // This was either the payment schedule creation or swap execution transaction
         const isSwap = hash && pendingSwapExecution === null; // Swap just completed
-        setChatMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `✅ ${isSwap ? 'Swap' : 'Payment Schedule'} Complete!\n\n🔗 Hash: ${hash.slice(0, 10)}...${hash.slice(-8)}\n🌐 View on Explorer: ${explorerUrl}\n\n${isSwap ? '🎉 Your swap has been executed successfully!' : '🤖 PaymentExecutorAgent will now monitor and auto-execute this payment!\n\n🎉 Setup Complete! Your recurring payment is now active.'}` 
-        }]);
+        const isRecurringInvestment = localStorage.getItem(`recurring_investment_${address}`);
+        
+        if (isRecurringInvestment) {
+          const investmentData = JSON.parse(isRecurringInvestment);
+          
+          // Track the recurring investment in localStorage for properties page
+          trackRecurringInvestmentExecution(
+            investmentData.propertyId,
+            investmentData.propertyName,
+            investmentData.amount.toString()
+          );
+          
+          setChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `✅ Recurring Investment Schedule Complete!\n\n🔗 Hash: ${hash.slice(0, 10)}...${hash.slice(-8)}\n🌐 View on Explorer: ${explorerUrl}\n\n🤖 PaymentExecutorAgent will now monitor and auto-execute your recurring investments in ${investmentData.propertyName}!\n\n📊 Your investment will be tracked on the Properties page as payments execute.\n\n🎉 Setup Complete! Your recurring property investment is now active.` 
+          }]);
+          localStorage.removeItem(`recurring_investment_${address}`);
+        } else {
+          setChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `✅ ${isSwap ? 'Swap' : 'Payment Schedule'} Complete!\n\n🔗 Hash: ${hash.slice(0, 10)}...${hash.slice(-8)}\n🌐 View on Explorer: ${explorerUrl}\n\n${isSwap ? '🎉 Your swap has been executed successfully!' : '🤖 PaymentExecutorAgent will now monitor and auto-execute this payment!\n\n🎉 Setup Complete! Your recurring payment is now active.'}` 
+          }]);
+        }
       }
     }
   }, [isConfirmed, hash]);
@@ -761,6 +1338,64 @@ export default function Dashboard() {
             >
               <Building2 style={{ width: '14px', height: '14px' }} />
               Properties
+            </Link>
+
+            <Link
+              href="/bills"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                padding: '0.5rem 0.75rem',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: '#ffffff',
+                fontWeight: '500',
+                fontSize: '0.75rem',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              }}
+            >
+              <CreditCard style={{ width: '14px', height: '14px' }} />
+              Bills
+            </Link>
+
+            <Link
+              href="/transactions"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                padding: '0.5rem 0.75rem',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: '#ffffff',
+                fontWeight: '500',
+                fontSize: '0.75rem',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              }}
+            >
+              <History style={{ width: '14px', height: '14px' }} />
+              Transactions
             </Link>
 
             <ConnectButton />

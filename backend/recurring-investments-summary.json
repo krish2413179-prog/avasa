@@ -1,0 +1,20 @@
+{
+  "0x24c80f19649c0Da8418011eF0B6Ed3e22007758c_1": {
+    "payer": "0x24c80f19649c0Da8418011eF0B6Ed3e22007758c",
+    "propertyId": "1",
+    "propertyName": "Manhattan Luxury Apartments",
+    "propertyAddress": "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
+    "totalAmount": 200,
+    "executionCount": 28,
+    "lastExecution": "1983-07-18T13:23:36.000Z"
+  },
+  "0x24c80f19649c0Da8418011eF0B6Ed3e22007758c_2": {
+    "payer": "0x24c80f19649c0Da8418011eF0B6Ed3e22007758c",
+    "propertyId": "2",
+    "propertyName": "Miami Beach Condos",
+    "propertyAddress": "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
+    "totalAmount": 40,
+    "executionCount": 4,
+    "lastExecution": "1983-07-18T19:40:00.000Z"
+  }
+}

@@ -1,9 +1,11 @@
 export interface ParsedAction {
-  type: 'schedule_swap' | 'invest_real_estate' | 'claim_yield' | 'transfer_shares' | 'kyc_update' | 'portfolio_rebalance' | 'market_analysis' | 'stream_money' | 'resolve_basename' | 'borrow_against_assets' | 'auto_rebalance' | 'copy_trading' | 'limit_order' | 'yield_farmer' | 'smart_dca' | 'emergency_brake' | 'add_friend'
+  type: 'schedule_swap' | 'invest_real_estate' | 'claim_yield' | 'transfer_shares' | 'kyc_update' | 'portfolio_rebalance' | 'market_analysis' | 'stream_money' | 'resolve_basename' | 'borrow_against_assets' | 'auto_rebalance' | 'copy_trading' | 'limit_order' | 'yield_farmer' | 'smart_dca' | 'emergency_brake' | 'add_friend' | 'cancel_schedules' | 'rent_to_own'
   description: string
   params: {
     // Scheduling parameters
-    recurrence?: 'daily' | 'weekly' | 'monthly' | 'once'
+    recurrence?: 'daily' | 'weekly' | 'monthly' | 'once' | 'custom'
+    customInterval?: number
+    maxExecutions?: number
     startDate?: string
     endDate?: string
     
@@ -70,6 +72,27 @@ export interface ParsedAction {
     
     // Other parameters
     complianceLevel?: 'basic' | 'enhanced' | 'institutional'
+    investmentType?: string
+    
+    // Rent-to-own parameters
+    targetOwnershipPercentage?: number // 5 = 5%
+    targetMonths?: number // How many months to reach ownership goal
+    monthlyRent?: string // Monthly rent amount
+    
+    // Intelligent safety parameters
+    gasLimit?: number // Max gas price in gwei
+    emergencyBrake?: number // Emergency stop balance in USDC
+    emergencyBrakeBalance?: string // Emergency stop balance in USDC
+    retryInterval?: number // Retry interval in minutes
+    gasOptimization?: boolean // Enable gas optimization
+    minWalletBalance?: string // Minimum wallet balance to maintain
+    
+    // Event-driven trigger parameters (IFTTT for Web3)
+    eventTrigger?: 'usdc_received' | 'eth_received' | 'nft_received' | 'contract_call' | 'price_threshold'
+    triggerFrom?: string // Specific sender address (e.g., Diya's address)
+    triggerTo?: string // Specific recipient address
+    triggerAmount?: string // Minimum amount to trigger
+    triggerDescription?: string // Human-readable trigger description
     
     // Friend management parameters
     friendName?: string
@@ -229,6 +252,7 @@ PROPERTY REGISTRY CONTEXT:
 ${JSON.stringify(PROPERTY_REGISTRY, null, 2)}
 
 ENHANCED PARSING RULES:
+- CRITICAL: If user says "stop all payments", "cancel all payments", "stop payments to [name]" - return cancel_schedules action
 - CRITICAL: If user says "don't", "do not", "cancel", "stop", "no" - DO NOT execute any investment action
 - Map "this property" to Property #1 (Manhattan) by default
 - "the office" = Property #3 (Austin Tech Hub)
@@ -246,11 +270,32 @@ SCHEDULING INTELLIGENCE:
 - "daily" = recurrence: "daily"
 - "weekly" = recurrence: "weekly" 
 - "monthly" = recurrence: "monthly"
+- "every 30 seconds" = recurrence: "custom", customInterval: 30, maxExecutions calculated from duration
+- "every 5 minutes" = recurrence: "custom", customInterval: 300, maxExecutions calculated from duration
+- "every minute" = recurrence: "custom", customInterval: 60, maxExecutions calculated from duration
+- "every hour" = recurrence: "custom", customInterval: 3600, maxExecutions calculated from duration
+- "for 2 minutes" = duration limit to calculate maxExecutions
 - "$1000 worth" = fiatAmount: "$1000"
 
+RECURRING PROPERTY INVESTMENTS:
+- "invest $10 in manhattan every 30 seconds for 2 minutes" = schedule_swap with investmentType: "recurring_property_investment"
+  - customInterval: 30 (seconds)
+  - maxExecutions: 4 (120 seconds / 30 seconds = 4)
+- "invest $50 in property 2 every minute for 5 minutes" = schedule_swap with investmentType: "recurring_property_investment"
+  - customInterval: 60 (seconds)  
+  - maxExecutions: 5 (300 seconds / 60 seconds = 5)
+- "invest $20 in manhattan every hour for 3 hours" = schedule_swap with investmentType: "recurring_property_investment"
+  - customInterval: 3600 (seconds)
+  - maxExecutions: 3 (10800 seconds / 3600 seconds = 3)
+- Custom intervals should use schedule_swap NOT invest_real_estate
+- Calculate maxExecutions = total_duration_in_seconds / interval_in_seconds
+- "every minute" = 60 seconds, "every hour" = 3600 seconds
+
 SUPPORTED ACTIONS:
-- schedule_swap: For recurring token swaps
-- invest_real_estate: For property investments
+- cancel_schedules: For stopping/canceling existing payment schedules
+- schedule_swap: For recurring token swaps AND recurring property investments with custom intervals
+- invest_real_estate: For ONE-TIME property investments only
+- rent_to_own: For Real-Time Home Ownership where rent payments unlock property shares
 - claim_yield: For rental income
 - portfolio_rebalance: For optimization
 - market_analysis: For trends
@@ -264,6 +309,34 @@ SUPPORTED ACTIONS:
 - smart_dca: For EIP-7715 weekly DCA with rate limits (Best Use #2)
 - emergency_brake: For EIP-7715 dormant stop-loss protection (Best Use #3)
 - add_friend: For saving contact addresses with names
+
+RENT-TO-OWN COMMANDS (Real-Time Home Ownership):
+- "I want to own 5% of this apartment by December" = rent_to_own with targetOwnershipPercentage: 5
+- "Set up rent-to-own for Manhattan property, 3% ownership in 12 months" = rent_to_own
+- "Stream $2000/month to own 10% of property 2" = rent_to_own with monthlyRent and targetOwnershipPercentage
+- "Pay rent and get equity in return" = rent_to_own with default parameters
+- Calculate targetMonths from "by December" (current date to target date)
+- Extract ownership percentage from "5%", "3%", "10%" etc.
+- Extract monthly rent from "$2000/month", "$1500 monthly" etc.
+
+INTELLIGENT SAFETY COMMANDS:
+- "Pay my rent of 2000 USDC on the 1st, but ONLY if gas is below 20 gwei" = schedule_swap with gasLimit: 20
+- "Stream 50 USDC every hour to Chicago property, but PAUSE if my balance drops below 500 USDC" = schedule_swap with emergencyBrake: 500
+- "If gas is high, try again every hour" = schedule_swap with retryInterval: 60
+- "Set emergency brake at 100 USDC" = schedule_swap with emergencyBrakeBalance: 100
+- "Only execute when gas is cheap" = schedule_swap with gasOptimization: true
+
+EVENT-DRIVEN COMMANDS (IFTTT for Web3):
+- "Pay my rent when Diya sends me money" = schedule_swap with eventTrigger: usdc_received, triggerFrom: Diya's address
+- "If I receive 1000 USDC from anyone, pay my bills" = schedule_swap with eventTrigger: usdc_received, triggerAmount: 1000
+- "When my salary arrives, automatically invest 20% in Manhattan property" = schedule_swap with eventTrigger: usdc_received, triggerFrom: employer
+- "If someone sends me ETH, convert it to USDC and pay rent" = schedule_swap with eventTrigger: eth_received
+- "When I get paid, trigger all my monthly payments" = schedule_swap with eventTrigger: usdc_received, triggerMultiple: true
+
+CRITICAL RECURRING INVESTMENT RULES:
+- ANY investment with "every X seconds/minutes/hours" = schedule_swap with investmentType: "recurring_property_investment"
+- ANY investment with custom intervals = schedule_swap NOT invest_real_estate
+- Only use invest_real_estate for one-time investments without recurrence
 
 EIP-7715 ADVANCED PERMISSION STRATEGIES (Best Use Cases):
 1. "Turn on Auto-Compound" = yield_farmer with action: "activate"
@@ -304,38 +377,31 @@ SIMPLE BUY/SELL vs LIMIT ORDERS:
 
 CRITICAL: Simple buy/sell without conditions should be schedule_swap, NOT limit_order!
 
-Return ONLY valid JSON with this structure:
+Return ONLY valid JSON with this structure (only include relevant parameters):
 {
-  "type": "schedule_swap|invest_real_estate|claim_yield|portfolio_rebalance|market_analysis|stream_money|resolve_basename|borrow_against_assets|auto_rebalance|copy_trading|limit_order|yield_farmer|smart_dca|emergency_brake|add_friend",
+  "type": "cancel_schedules|schedule_swap|invest_real_estate|claim_yield|portfolio_rebalance|market_analysis|stream_money|resolve_basename|borrow_against_assets|auto_rebalance|copy_trading|limit_order|yield_farmer|smart_dca|emergency_brake|add_friend",
   "description": "Human readable description",
   "params": {
-    "propertyId": "1-10 or 'all'",
+    // For recurring property investments (schedule_swap with investmentType)
+    "propertyId": "1-10 for property investments",
+    "propertyAddress": "property contract address",
+    "propertyName": "property name",
     "amount": "investment amount",
+    "recurrence": "custom for custom intervals",
+    "customInterval": "interval in seconds",
+    "maxExecutions": "number of executions",
+    "investmentType": "recurring_property_investment",
+    
+    // For regular swaps
     "tokenIn": "ETH|USDC|WETH|DAI",
     "tokenOut": "ETH|USDC|WETH|DAI", 
-    "fiatAmount": "$1000 format",
-    "recurrence": "daily|weekly|monthly|once",
-    "investmentStrategy": "conservative|balanced|aggressive",
-    "recipient": "address or basename",
-    "streamRate": "5 USDC/day format",
-    "basename": "name.base.eth format",
-    "collateralToken": "WETH|USDC|DAI",
-    "borrowToken": "USDC|DAI|WETH",
-    "collateralAmount": "1.0",
-    "borrowAmount": "500",
-    "targetAllocations": {"RealEstate": 60, "ETH": 40},
-    "whaleAddress": "0x123... or name.base.eth",
-    "copyPercentage": 10,
-    "targetPrice": "1500",
-    "orderType": "buy|sell",
-    "weeklyAmount": "0.1",
-    "triggerPrice": "1500",
-    "permissionType": "yield_farmer|smart_dca|emergency_brake",
-    "friendName": "alice",
-    "friendAddress": "0x123...",
+    
+    // For other actions (only include if relevant)
     "action": "create|stop|resolve|set|borrow|repay|activate|deactivate|execute|check|add|list"
   }
 }
+
+IMPORTANT: Only include parameters that are relevant to the specific action type. Do not include all parameters for every request.
 
 Do not include explanations or markdown.`
         },
@@ -415,13 +481,37 @@ async function enhancedMockRWAParser(input: string, userAddress?: string): Promi
     return null;
   };
   
+  // CRITICAL: Check for cancellation/stopping commands FIRST
+  const cancellationWords = ['cancel', 'stop', 'halt', 'abort'];
+  const hasCancellation = cancellationWords.some(word => lowerInput.includes(word));
+  
+  // Check for stop all payments commands
+  if (hasCancellation && (lowerInput.includes('all payments') || lowerInput.includes('payments to') || lowerInput.includes('all schedules'))) {
+    // Extract recipient if specified
+    let recipient = null;
+    const toMatch = lowerInput.match(/(?:payments to|stop.*to)\s+([a-zA-Z0-9.]+)/);
+    if (toMatch) {
+      recipient = toMatch[1];
+      // Try to resolve friend name to address
+      const friendAddress = await resolveFriendName(recipient);
+      if (friendAddress) {
+        recipient = friendAddress;
+      }
+    }
+    
+    return {
+      type: 'cancel_schedules',
+      description: recipient ? `Stop all payments to ${recipient}` : 'Stop all payment schedules',
+      params: {
+        action: 'stop',
+        recipient: recipient || 'all'
+      }
+    };
+  }
+  
   // CRITICAL: Check for negation first - but be more precise about context
   const directNegation = ['dont', "don't", 'do not', 'never'];
   const hasDirectNegation = directNegation.some(word => lowerInput.includes(word));
-  
-  // Check for cancellation/stopping commands
-  const cancellationWords = ['cancel', 'stop', 'halt', 'abort'];
-  const hasCancellation = cancellationWords.some(word => lowerInput.includes(word));
   
   // Check for "no" when related to investment
   const hasNoInvestment = lowerInput.includes('no invest');
@@ -447,10 +537,56 @@ async function enhancedMockRWAParser(input: string, userAddress?: string): Promi
   }
   
   // Scheduling Detection
-  let recurrence: 'daily' | 'weekly' | 'monthly' | 'once' = 'once';
+  let recurrence: 'daily' | 'weekly' | 'monthly' | 'once' | 'custom' = 'once';
+  let customInterval: number | undefined;
+  let maxExecutions: number | undefined;
+  
   if (lowerInput.includes('daily') || lowerInput.includes('every day')) recurrence = 'daily';
   if (lowerInput.includes('weekly') || lowerInput.includes('every week')) recurrence = 'weekly';
   if (lowerInput.includes('monthly') || lowerInput.includes('every month')) recurrence = 'monthly';
+  
+  // Handle custom intervals like "every 30 seconds", "every 5 minutes"
+  const customIntervalMatch = input.match(/every\s+(\d+)\s+(second|minute|hour)s?/i);
+  if (customIntervalMatch) {
+    recurrence = 'custom';
+    const value = parseInt(customIntervalMatch[1]);
+    const unit = customIntervalMatch[2].toLowerCase();
+    
+    switch (unit) {
+      case 'second':
+        customInterval = value;
+        break;
+      case 'minute':
+        customInterval = value * 60;
+        break;
+      case 'hour':
+        customInterval = value * 3600;
+        break;
+    }
+    console.log('🔍 Custom interval detected:', { recurrence, customInterval, value, unit });
+  }
+  
+  // Handle duration limits like "for 2 minutes", "for 1 hour"
+  const durationMatch = input.match(/for\s+(\d+)\s+(second|minute|hour)s?/i);
+  if (durationMatch && customInterval) {
+    const durationValue = parseInt(durationMatch[1]);
+    const durationUnit = durationMatch[2].toLowerCase();
+    
+    let totalDuration = 0;
+    switch (durationUnit) {
+      case 'second':
+        totalDuration = durationValue;
+        break;
+      case 'minute':
+        totalDuration = durationValue * 60;
+        break;
+      case 'hour':
+        totalDuration = durationValue * 3600;
+        break;
+    }
+    
+    maxExecutions = Math.floor(totalDuration / customInterval);
+  }
   
   // Fiat Amount Detection
   const fiatMatch = input.match(/\$(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:worth|dollars?)?/i);
@@ -497,6 +633,188 @@ async function enhancedMockRWAParser(input: string, userAddress?: string): Promi
     };
   }
   
+  // Rent-to-Own Commands (Real-Time Home Ownership)
+  if ((lowerInput.includes('own') && (lowerInput.includes('apartment') || lowerInput.includes('property') || lowerInput.includes('house'))) ||
+      (lowerInput.includes('rent') && lowerInput.includes('equity')) ||
+      (lowerInput.includes('rent') && lowerInput.includes('own')) ||
+      (lowerInput.includes('stream') && lowerInput.includes('own')) ||
+      lowerInput.includes('rent-to-own') ||
+      lowerInput.includes('rent to own')) {
+    
+    const property = PROPERTY_REGISTRY.properties.find(p => p.id === propertyId);
+    
+    // Extract target ownership percentage
+    let targetOwnershipPercentage = 5; // Default 5%
+    const ownershipMatch = input.match(/(\d+(?:\.\d+)?)%/);
+    if (ownershipMatch) {
+      targetOwnershipPercentage = parseFloat(ownershipMatch[1]);
+    }
+    
+    // Extract monthly rent amount
+    let monthlyRent = '2000'; // Default $2000/month
+    const rentMatch = input.match(/\$(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:\/month|monthly|per month|month)?/i);
+    if (rentMatch) {
+      monthlyRent = rentMatch[1].replace(/,/g, '');
+    }
+    
+    // Extract target months from date or explicit months
+    let targetMonths = 12; // Default 12 months
+    
+    // Check for "by December", "by March", etc.
+    const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                       'july', 'august', 'september', 'october', 'november', 'december'];
+    const monthMatch = input.match(/by\s+(\w+)/i);
+    if (monthMatch) {
+      const targetMonth = monthMatch[1].toLowerCase();
+      const monthIndex = monthNames.indexOf(targetMonth);
+      if (monthIndex !== -1) {
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        
+        let targetYear = currentYear;
+        if (monthIndex <= currentMonth) {
+          targetYear++; // Next year if the month has passed
+        }
+        
+        const targetDate = new Date(targetYear, monthIndex, 1);
+        const monthsDiff = (targetDate.getFullYear() - currentYear) * 12 + (monthIndex - currentMonth);
+        targetMonths = Math.max(1, monthsDiff);
+      }
+    }
+    
+    // Check for explicit months like "in 6 months", "12 months"
+    const explicitMonthsMatch = input.match(/(?:in\s+)?(\d+)\s+months?/i);
+    if (explicitMonthsMatch) {
+      targetMonths = parseInt(explicitMonthsMatch[1]);
+    }
+    
+    return {
+      type: 'rent_to_own',
+      description: `Set up rent-to-own: ${targetOwnershipPercentage}% ownership of ${property?.name || 'Property #' + propertyId} in ${targetMonths} months with $${monthlyRent}/month rent`,
+      params: {
+        propertyId,
+        propertyAddress: property?.address,
+        propertyName: property?.name,
+        targetOwnershipPercentage: targetOwnershipPercentage,
+        targetMonths: targetMonths,
+        monthlyRent: monthlyRent,
+        action: 'create'
+      }
+    };
+  }
+  
+  // Intelligent Safety Commands Detection
+  let gasLimit: number | undefined;
+  let emergencyBrakeBalance: string | undefined;
+  let retryInterval: number | undefined;
+  let minWalletBalance: string | undefined;
+  let gasOptimization: boolean = false;
+  
+  // Gas limit detection: "only if gas is below 20 gwei", "when gas is under 15 gwei"
+  const gasLimitMatch = input.match(/(?:gas.*?below|gas.*?under|gas.*?less than)\s*(\d+)\s*gwei/i);
+  if (gasLimitMatch) {
+    gasLimit = parseInt(gasLimitMatch[1]);
+    console.log('🛡️ Gas limit detected:', gasLimit, 'gwei');
+  }
+  
+  // Emergency brake detection: "pause if balance drops below 500 USDC", "emergency brake at 100 USDC"
+  const emergencyBrakeMatch = input.match(/(?:pause.*?below|brake.*?at|balance.*?below)\s*(\d+(?:\.\d+)?)\s*(?:USDC|usdc|\$)?/i);
+  if (emergencyBrakeMatch) {
+    emergencyBrakeBalance = emergencyBrakeMatch[1];
+    console.log('🛡️ Emergency brake detected:', emergencyBrakeBalance, 'USDC');
+  }
+  
+  // Retry interval detection: "try again every hour", "retry every 30 minutes"
+  const retryMatch = input.match(/(?:try again|retry).*?every\s*(\d+)\s*(minute|hour)s?/i);
+  if (retryMatch) {
+    const value = parseInt(retryMatch[1]);
+    const unit = retryMatch[2].toLowerCase();
+    retryInterval = unit === 'hour' ? value * 60 : value;
+    console.log('🛡️ Retry interval detected:', retryInterval, 'minutes');
+  }
+  
+  // Gas optimization detection: "only when gas is cheap", "wait for low gas"
+  if (lowerInput.includes('gas is cheap') || lowerInput.includes('low gas') || lowerInput.includes('cheap gas')) {
+    gasOptimization = true;
+    gasLimit = gasLimit || 20; // Default to 20 gwei if not specified
+    console.log('🛡️ Gas optimization enabled');
+  }
+  
+  // Minimum balance detection: "maintain 1000 USDC balance"
+  const minBalanceMatch = input.match(/maintain.*?(\d+(?:\.\d+)?)\s*(?:USDC|usdc|\$)/i);
+  if (minBalanceMatch) {
+    minWalletBalance = minBalanceMatch[1];
+    console.log('🛡️ Minimum balance detected:', minWalletBalance, 'USDC');
+  }
+  
+  // Event-Driven Trigger Detection (IFTTT for Web3)
+  let eventTrigger: 'usdc_received' | 'eth_received' | 'nft_received' | 'contract_call' | 'price_threshold' | undefined;
+  let triggerFrom: string | undefined;
+  let triggerTo: string | undefined;
+  let triggerAmount: string | undefined;
+  let triggerDescription: string | undefined;
+  
+  // "When [someone] sends me money" detection
+  if (lowerInput.includes('when') && (lowerInput.includes('sends me') || lowerInput.includes('send me') || lowerInput.includes('receive'))) {
+    eventTrigger = 'usdc_received';
+    
+    // Extract sender name: "when diya sends me money", "when my boss pays me"
+    const senderMatch = input.match(/when\s+(\w+)\s+(?:sends?|pays?)\s+me/i);
+    if (senderMatch) {
+      const senderName = senderMatch[1].toLowerCase();
+      // Try to resolve friend name to address
+      if (userAddress) {
+        try {
+          const response = await fetch(`http://localhost:3001/api/friends/${userAddress}/resolve/${senderName}`);
+          if (response.ok) {
+            const data = await response.json();
+            triggerFrom = data.friendAddress;
+            triggerDescription = `When ${senderName} sends USDC`;
+            console.log('🎯 Event trigger detected:', triggerDescription, 'from', triggerFrom);
+          }
+        } catch (error) {
+          console.log('Could not resolve sender name:', senderName);
+        }
+      }
+      
+      if (!triggerFrom) {
+        triggerDescription = `When ${senderName} sends USDC (address needed)`;
+        console.log('🎯 Event trigger detected:', triggerDescription);
+      }
+    }
+    
+    // Extract trigger amount: "when I receive 1000 USDC"
+    const amountMatch = input.match(/receive.*?(\d+(?:\.\d+)?)\s*(?:USDC|usdc|\$)/i);
+    if (amountMatch) {
+      triggerAmount = amountMatch[1];
+      triggerDescription = triggerDescription ? 
+        `${triggerDescription} (min ${triggerAmount} USDC)` : 
+        `When receiving ${triggerAmount}+ USDC`;
+      console.log('🎯 Trigger amount detected:', triggerAmount, 'USDC');
+    }
+    
+    if (!triggerDescription) {
+      triggerDescription = 'When receiving USDC payment';
+    }
+  }
+  
+  // "If I get paid" detection
+  if ((lowerInput.includes('if') || lowerInput.includes('when')) && 
+      (lowerInput.includes('get paid') || lowerInput.includes('salary') || lowerInput.includes('paycheck'))) {
+    eventTrigger = 'usdc_received';
+    triggerDescription = 'When salary/paycheck arrives';
+    console.log('🎯 Salary trigger detected');
+  }
+  
+  // "When someone sends me ETH" detection
+  if (lowerInput.includes('when') && lowerInput.includes('eth') && 
+      (lowerInput.includes('sends me') || lowerInput.includes('receive'))) {
+    eventTrigger = 'eth_received';
+    triggerDescription = 'When receiving ETH';
+    console.log('🎯 ETH trigger detected');
+  }
+  
   // Investment Commands with Context Mapping
   if (lowerInput.includes('invest') || (lowerInput.includes('buy') && 
       (lowerInput.includes('property') || lowerInput.includes('real estate') || 
@@ -505,19 +823,62 @@ async function enhancedMockRWAParser(input: string, userAddress?: string): Promi
     const property = PROPERTY_REGISTRY.properties.find(p => p.id === propertyId);
     const amount = fiatAmount || (input.match(/\$?(\d+(?:,\d{3})*(?:\.\d+)?)/)?.[1]?.replace(/,/g, '') || '5000');
     
-    return {
-      type: 'invest_real_estate',
-      description: `Invest $${amount} in ${property?.name || 'Property #' + propertyId}`,
-      params: {
-        propertyId,
-        propertyAddress: property?.address,
-        propertyName: property?.name,
-        amount: amount,
-        recurrence: recurrence, // Add recurrence support
-        investmentStrategy: 'balanced',
-        complianceLevel: 'enhanced'
-      }
-    };
+    // Check if this is a recurring investment with custom intervals
+    if (recurrence === 'custom' && customInterval && maxExecutions) {
+      console.log('🎯 Creating recurring investment:', { recurrence, customInterval, maxExecutions });
+      // This is a recurring property investment - use schedule_swap with special investment type
+      return {
+        type: 'schedule_swap',
+        description: `Recurring investment: $${amount} USDC in ${property?.name || 'Property #' + propertyId} every ${customInterval} seconds for ${maxExecutions} times`,
+        params: {
+          tokenIn: 'USDC',
+          tokenOut: 'PROPERTY_SHARES',
+          amount: amount,
+          recurrence: 'custom',
+          customInterval: customInterval,
+          maxExecutions: maxExecutions,
+          investmentType: 'recurring_property_investment',
+          propertyId,
+          propertyAddress: property?.address,
+          propertyName: property?.name,
+          investmentStrategy: 'balanced',
+          complianceLevel: 'enhanced'
+        }
+      };
+    } else if (recurrence !== 'once') {
+      // Regular recurring investment (daily/weekly/monthly)
+      return {
+        type: 'schedule_swap',
+        description: `${recurrence.charAt(0).toUpperCase() + recurrence.slice(1)} investment: $${amount} USDC in ${property?.name || 'Property #' + propertyId}`,
+        params: {
+          tokenIn: 'USDC',
+          tokenOut: 'PROPERTY_SHARES',
+          amount: amount,
+          recurrence: recurrence,
+          investmentType: 'recurring_property_investment',
+          propertyId,
+          propertyAddress: property?.address,
+          propertyName: property?.name,
+          investmentStrategy: 'balanced',
+          complianceLevel: 'enhanced'
+        }
+      };
+    } else {
+      // One-time investment
+      return {
+        type: 'invest_real_estate',
+        description: `Invest $${amount} in ${property?.name || 'Property #' + propertyId}`,
+        params: {
+          propertyId,
+          propertyAddress: property?.address,
+          propertyName: property?.name,
+          amount: amount,
+          recurrence: recurrence,
+          investmentStrategy: 'balanced',
+          complianceLevel: 'enhanced'
+        }
+      };
+    }
   }
   
   // Yield Claiming Commands

@@ -111,3 +111,6 @@ export const PROPERTY_ADDRESSES = {
   "Boston Historic Brownstones": "0x275039fc0fd2eeFac30835af6aeFf24e8c52bA6B",
   "Nashville Music District": "0x07e7876A32feEc2cE734aae93d9aB7623EaEF4a3"
 };
+
+// Bills Manager Contract
+export const BILLS_MANAGER_ADDRESS = "0xE98fA21B6218A3B755Ade3508576C819FbD785be";

@@ -4,7 +4,8 @@
   "description": "Backend service for AI Agent DApp",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server-simple.ts",
+    "dev": "tsx watch src/server-basic.ts",
+    "dev-full": "tsx watch src/server-simple.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "scheduler": "tsx src/jobs/scheduler.ts"

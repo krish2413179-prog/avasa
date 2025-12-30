@@ -1,11 +1,22 @@
-name: propchain-ai-indexer
-description: Real-time indexing for PropChain AI RWA platform - Hyper-Speed Portfolio Tracking
+name: veda-financial-engine
+description: Real-Time Financial Engine - Transforms rent payments into intelligent financial data
 
 networks:
   - id: 84532 # Base Sepolia
-    start_block: 0
+    start_block: 35500000 # Start from recent blocks for faster sync
     contracts:
-      # All 10 Real Estate Property Contracts
+      # 🚀 CORE FINANCIAL ENGINE - AutoRecurringPayments
+      - name: AutoRecurringPayments
+        address: "0x6cB93c4538E7166F3E8c64bA654Ec13b9fB74C96"
+        handler: src/EventHandlers.js
+        events:
+          - event: PaymentScheduleCreated(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount, uint256 interval, uint256 maxExecutions, uint256 executorReward)
+          - event: PaymentExecuted(bytes32 indexed scheduleId, address indexed payer, address indexed recipient, uint256 amount, address executor, uint256 reward)
+          - event: PaymentScheduleCancelled(bytes32 indexed scheduleId)
+          - event: PermissionGranted(address indexed user, uint256 maxAmountPerPayment, uint256 maxTotalAmount, uint256 validUntil)
+          - event: ExecutorRewarded(address indexed executor, uint256 reward, bytes32 scheduleId)
+
+      # 🏠 PROPERTY CONTRACTS - Real Estate Investment Tracking
       - name: ManhattanLuxuryApartments
         address: "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be"
         handler: src/EventHandlers.js
@@ -13,7 +24,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: MiamiBeachCondos
@@ -23,7 +33,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: AustinTechHubOffice
@@ -33,7 +42,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: SeattleWarehouseDistrict
@@ -43,7 +51,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: DenverMountainResort
@@ -53,7 +60,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: ChicagoDowntownLofts
@@ -63,7 +69,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: LosAngelesStudioComplex
@@ -73,7 +78,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: PhoenixRetailPlaza
@@ -83,7 +87,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: BostonHistoricBrownstones
@@ -93,7 +96,6 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
           
       - name: NashvilleMusicDistrict
@@ -103,31 +105,7 @@ networks:
           - event: SharesPurchased(address indexed investor, uint256 shares, uint256 amount)
           - event: SharesWithdrawn(address indexed investor, uint256 shares, uint256 amount)
           - event: YieldDistributed(address indexed investor, uint256 amount)
-          - event: PropertyUpdated(uint256 indexed propertyId, string name, uint256 pricePerShare)
           - event: Transfer(address indexed from, address indexed to, uint256 value)
-          
-      # Uniswap V3 Router for DeFi tracking - TEMPORARILY DISABLED
-      # - name: UniswapV3Router
-      #   address: "0x2626664c2603336E57B271c5C0b26F421741e481" # Base Sepolia
-      #   handler: src/EventHandlers.js
-      #   events:
-      #     - event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
-          
-      # Superfluid Host for streaming tracking - TEMPORARILY DISABLED
-      # - name: SuperfluidHost
-      #   address: "0x4C073B3baB6d88B6575C8743282064147A6A6903"
-      #   handler: src/EventHandlers.js
-      #   events:
-      #     - event: FlowUpdated(address indexed token, address indexed sender, address indexed receiver, int96 flowRate, int256 totalSenderFlowRate, int256 totalReceiverFlowRate, bytes userData)
-          
-      # Aave V3 Pool for lending tracking - TEMPORARILY DISABLED
-      # - name: AaveV3Pool
-      #   address: "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b" # Base Sepolia Pool
-      #   handler: src/EventHandlers.js
-      #   events:
-      #     - event: Supply(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
-      #     - event: Borrow(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint8 interestRateMode, uint256 borrowRate, uint16 indexed referralCode)
-      #     - event: Repay(address indexed reserve, address indexed user, address indexed repayer, uint256 amount, bool useATokens)
 
 field_selection:
   transaction_fields:
@@ -137,6 +115,8 @@ field_selection:
     - "value"
     - "gasUsed"
     - "gasPrice"
+    - "blockNumber"
+    - "timestamp"
 
 rollback_on_reorg: true
 save_full_history: true

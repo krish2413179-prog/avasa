@@ -1,0 +1,8 @@
+// COPY AND PASTE THIS INTO BROWSER CONSOLE ON PROPERTIES PAGE:
+
+console.log('🔄 Updating recurring investment data...');
+const addr = '0x24c80f19649c0Da8418011eF0B6Ed3e22007758c';
+localStorage.setItem(`investment_${addr}_1`, JSON.stringify({amount: '$200', shares: '2.0%', type: 'recurring', executionCount: 28}));
+localStorage.setItem(`investment_${addr}_2`, JSON.stringify({amount: '$40', shares: '0.4%', type: 'recurring', executionCount: 4}));
+console.log('✅ Data updated! Refreshing page...'); 
+setTimeout(() => window.location.reload(), 1000);
