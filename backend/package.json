@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server-basic.ts",
     "dev-full": "tsx watch src/server-simple.ts",
+    "dev-engine": "tsx watch src/server-financial-engine.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "scheduler": "tsx src/jobs/scheduler.ts"
