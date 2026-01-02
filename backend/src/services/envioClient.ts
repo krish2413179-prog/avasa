@@ -5,7 +5,7 @@
 
 import fetch from 'node-fetch';
 
-const ENVIO_GRAPHQL_ENDPOINT = process.env.ENVIO_GRAPHQL_URL || 'http://localhost:8080/v1/graphql';
+const ENVIO_GRAPHQL_ENDPOINT = process.env.ENVIO_GRAPHQL_ENDPOINT || 'http://localhost:8080/v1/graphql';
 
 interface GraphQLResponse<T> {
   data?: T;

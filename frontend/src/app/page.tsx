@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Brain, Send, Users, Building2, Clock, X, CheckCircle, AlertCircle, CreditCard, History } from 'lucide-react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseEther, formatEther } from 'viem';
+import { parseEther, formatEther, getAddress } from 'viem';
 import { PROPERTIES } from '@/lib/data';
 import { transactionTracker, TransactionType, TransactionStatus } from '@/lib/transactionTracker';
 
@@ -74,6 +74,30 @@ const USDC_ABI = [
     "outputs": [{"name": "", "type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}],
+    "name": "transfer",
+    "outputs": [{"name": "", "type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+const WETH_ABI = [
+  {
+    "inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}],
+    "name": "transfer",
+    "outputs": [{"name": "", "type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}],
+    "name": "approve",
+    "outputs": [{"name": "", "type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ];
 
@@ -111,10 +135,11 @@ const RWA_PROPERTY_ABI = [
 const RENT_TO_OWN_ADAPTER_ABI = [
   {
     "inputs": [
-      {"name": "_propertyShare", "type": "address"},
+      {"name": "_tenant", "type": "address"},
       {"name": "_landlord", "type": "address"},
-      {"name": "_rentAmount", "type": "uint256"},
-      {"name": "_targetOwnershipBasisPoints", "type": "uint256"},
+      {"name": "_propertyShare", "type": "address"},
+      {"name": "_monthlyRent", "type": "uint256"},
+      {"name": "_targetOwnershipPercentage", "type": "uint256"},
       {"name": "_targetMonths", "type": "uint256"}
     ],
     "name": "createRentToOwnSchedule",
@@ -124,27 +149,62 @@ const RENT_TO_OWN_ADAPTER_ABI = [
   },
   {
     "inputs": [
-      {"name": "_propertyShare", "type": "address"},
-      {"name": "_targetOwnershipBasisPoints", "type": "uint256"},
-      {"name": "_targetMonths", "type": "uint256"}
+      {"name": "_usdc", "type": "address"}
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {"name": "scheduleId", "type": "bytes32"},
+      {"name": "rentAmount", "type": "uint256"}
+    ],
+    "name": "processRentPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "propertyShare", "type": "address"},
+      {"name": "targetOwnershipBasisPoints", "type": "uint256"},
+      {"name": "targetMonths", "type": "uint256"}
     ],
     "name": "calculateRentForOwnership",
-    "outputs": [{"name": "", "type": "uint256"}],
+    "outputs": [{"name": "monthlyRent", "type": "uint256"}],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "tenant", "type": "address"}, 
+      {"name": "propertyShare", "type": "address"}
+    ],
+    "name": "getTenantProgress",
+    "outputs": [
+      {"name": "totalRentPaid", "type": "uint256"},
+      {"name": "sharesOwned", "type": "uint256"},
+      {"name": "ownershipPercentage", "type": "uint256"}
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{"name": "_tenant", "type": "address"}, {"name": "_propertyShare", "type": "address"}],
-    "name": "getTenantProgress",
-    "outputs": [
-      {"name": "currentOwnership", "type": "uint256"},
-      {"name": "targetOwnership", "type": "uint256"},
-      {"name": "totalRentPaid", "type": "uint256"},
-      {"name": "totalRentNeeded", "type": "uint256"},
-      {"name": "progressPercentage", "type": "uint256"},
-      {"name": "goalReached", "type": "bool"}
+    "inputs": [
+      {"name": "tenant", "type": "address"}
     ],
+    "name": "getTenantSchedules",
+    "outputs": [{"name": "", "type": "bytes32[]"}],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "scheduleId", "type": "bytes32"}
+    ],
+    "name": "stopSchedule",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ];
@@ -184,13 +244,16 @@ const PROPERTY_SHARE_ABI = [
 const AUTO_RECURRING_PAYMENTS_ADDRESS = "0x6cB93c4538E7166F3E8c64bA654Ec13b9fB74C96";
 const SIMPLE_SWAP_POOL_ADDRESS = "0xCe3bf5DEd091c822193F14502B724a1bf1040E5C";
 const USDC_TOKEN_ADDRESS = "0x6B0dacea6a72E759243c99Eaed840DEe9564C194";
-const RENT_TO_OWN_ADAPTER_ADDRESS = "0x0000000000000000000000000000000000000000"; // TODO: Deploy contract
+const WETH_TOKEN_ADDRESS = "0x4200000000000000000000000000000000000006"; // Base Sepolia WETH
+const RENT_TO_OWN_ADAPTER_ADDRESS = "0xE3C7a2eF4D897EA23E094756F78D858dD4579739";
 
 // Property Share contract addresses (one per property)
 const PROPERTY_SHARE_ADDRESSES: { [key: string]: string } = {
-  "1": "0x0000000000000000000000000000000000000001", // Manhattan
-  "2": "0x0000000000000000000000000000000000000002", // Miami
-  "3": "0x0000000000000000000000000000000000000003", // Austin
+  "1": "0x7c02065ED322234d63909833bbB3D70F84aa6eD2", // Manhattan
+  "2": "0xB239822545c1f13E944D01b755f64BCc7553d1b6", // Miami
+  "3": "0x7accDA4703bAdD925Cf0B764E3Ba799F46AefADb", // Austin
+  "4": "0x5f2463B285FA39cc14e5864436641FF80d651110", // Seattle
+  "5": "0x153BFa5Ac4aE140d3A6A118FF84a1b7f04885C54", // Denver
   // Add more as needed
 };
 
@@ -340,7 +403,7 @@ export default function Dashboard() {
       
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `✅ Real-Time Home Ownership Activated! 🎉\n\n🏠 Property: ${propertyName}\n🎯 Target: ${targetOwnershipPercentage}% ownership\n💰 Monthly Rent: $${monthlyRent}\n📅 Timeline: ${targetMonths} months\n\n🔗 Transaction: https://basescan.org/tx/${hash}\n\n🚀 Every rent payment now automatically unlocks fractional ownership!\n\n💡 Next Steps:\n1. Set up recurring monthly rent payments\n2. Watch your ownership percentage grow in real-time\n3. Build equity instead of losing money to rent\n\n🎊 Welcome to the future of renting!` 
+        content: `✅ Rent-to-Own Schedule Created! 📋\n\n🏠 Property: ${propertyName}\n🎯 Target: ${targetOwnershipPercentage}% ownership\n💰 Monthly Rent: $${monthlyRent} USDC\n📅 Timeline: ${targetMonths} months\n\n🔗 Transaction: https://basescan.org/tx/${hash}\n\n⚠️ IMPORTANT: This only created the schedule. To activate automatic rent payments:\n\n🔄 **Next Step Required:**\nSay: "Pay $${monthlyRent} USDC to landlord every month for ${targetMonths} months"\n\nThis will:\n1. Set up recurring monthly payments\n2. Automatically mint property shares with each payment\n3. Build your ownership percentage over time\n\n💡 Without recurring payments, you'll need to make manual rent payments to earn property shares.` 
       }]);
       
       // Store rent-to-own schedule in localStorage
@@ -358,6 +421,18 @@ export default function Dashboard() {
       setPendingRentToOwn(null);
     }
   }, [isConfirmed, pendingRentToOwn, address, hash]);
+
+  // Handle writeContract errors for rent-to-own
+  useEffect(() => {
+    if (error && pendingRentToOwn) {
+      console.error('❌ writeContract error:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `❌ Transaction failed: ${error.message}\n\n🔍 This might be due to:\n• Wrong network (need Base Sepolia)\n• Insufficient gas fees\n• Contract interaction error\n• User rejected transaction` 
+      }]);
+      setPendingRentToOwn(null);
+    }
+  }, [error, pendingRentToOwn]);
 
   // Handle swap transaction confirmations
   useEffect(() => {
@@ -404,7 +479,7 @@ export default function Dashboard() {
 
     try {
       // Send message to backend AI parser
-      const response = await fetch('http://localhost:3001/api/parse', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/parse`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -473,7 +548,7 @@ export default function Dashboard() {
     try {
       if (params.action === 'add') {
         // Add friend
-        const response = await fetch('http://localhost:3001/api/friends', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -500,7 +575,7 @@ export default function Dashboard() {
         }
       } else if (params.action === 'list') {
         // List friends
-        const response = await fetch(`http://localhost:3001/api/friends/${address}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends/${address}`);
         const result = await response.json();
 
         if (response.ok) {
@@ -542,7 +617,7 @@ export default function Dashboard() {
   };
 
   const needsBlockchainExecution = (actionType: string): boolean => {
-    return ['stream_money', 'invest_real_estate', 'schedule_swap', 'borrow_against_assets', 'cancel_schedules', 'rent_to_own'].includes(actionType);
+    return ['stream_money', 'invest_real_estate', 'schedule_swap', 'transfer_shares', 'borrow_against_assets', 'cancel_schedules', 'rent_to_own'].includes(actionType);
   };
 
   const executeAction = async (action: PendingAction) => {
@@ -566,6 +641,9 @@ export default function Dashboard() {
           break;
         case 'schedule_swap':
           await executeSwap(action.params);
+          break;
+        case 'transfer_shares':
+          await executeSimpleTransfer(action.params);
           break;
         case 'invest_real_estate':
           await executeInvestment(action.params);
@@ -594,10 +672,15 @@ export default function Dashboard() {
   const createPaymentSchedule = async () => {
     if (!pendingScheduleCreation) return;
 
-    const { recipient, amount, interval, maxExecutions, isPropertyInvestment, propertyName, propertyId, usdcAmount } = pendingScheduleCreation;
+    const { recipient, amount, interval, maxExecutions, isPropertyInvestment, propertyName, propertyId, usdcAmount, isEventDriven, eventTrigger, triggerFrom, triggerDescription } = pendingScheduleCreation;
 
     try {
-      if (isPropertyInvestment) {
+      if (isEventDriven) {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `🎯 Step 3: Creating event-driven payment schedule...\n💰 Amount: Variable (matches received amount)\n📍 To: ${recipient}\n🎯 Trigger: ${triggerDescription}\n⏰ Interval: 1 year (event-driven, not time-based)\n🔄 Executions: Up to 100 triggered events` 
+        }]);
+      } else if (isPropertyInvestment) {
         setChatMessages(prev => [...prev, { 
           role: 'assistant', 
           content: `📅 Step 2: Creating recurring investment schedule...\n💰 Amount: $${usdcAmount} USDC per investment\n🏢 Property: ${propertyName}\n⏰ Every: ${interval} seconds\n🔄 Times: ${maxExecutions}` 
@@ -609,16 +692,49 @@ export default function Dashboard() {
         }]);
       }
 
-      const tx = await writeContract({
-        address: AUTO_RECURRING_PAYMENTS_ADDRESS,
+      writeContract({
+        address: getAddress(AUTO_RECURRING_PAYMENTS_ADDRESS),
         abi: AUTO_RECURRING_PAYMENTS_ABI,
         functionName: 'createPaymentSchedule',
         args: [recipient, amount, interval, maxExecutions],
       });
 
+      if (isEventDriven) {
+        // Register event trigger with the payment agent
+        setTimeout(async () => {
+          try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/event-trigger`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                scheduleId: `event_${Date.now()}`, // Temporary ID
+                eventTrigger,
+                triggerFrom,
+                triggerDescription,
+                userAddress: address,
+                recipient
+              }),
+            });
+
+            if (response.ok) {
+              setChatMessages(prev => [...prev, { 
+                role: 'assistant', 
+                content: `✅ Event monitoring activated!\n\n🎯 Your payment agent is now watching the blockchain for:\n• ${triggerDescription}\n• Will automatically send received amount to ${recipient}\n\n🚀 IFTTT for Web3 is now LIVE!` 
+              }]);
+            }
+          } catch (error) {
+            console.error('Failed to register event trigger:', error);
+          }
+        }, 3000); // Wait 3 seconds for schedule creation to complete
+      }
+
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `✅ ${isPropertyInvestment ? 'Recurring investment' : 'Payment'} schedule creation initiated! Waiting for confirmation...` 
+        content: isEventDriven ? 
+          `✅ Event-driven payment schedule creation initiated!\n\n🔄 Step 4: Setting up blockchain monitoring...\n\n🎯 Your payment agent will now monitor the blockchain for:\n• Incoming USDC transfers${triggerFrom ? ` from ${triggerFrom}` : ''}\n• When detected, automatically send the same amount to ${recipient}\n\n⚡ This is real IFTTT (If This Then That) for Web3!` :
+          `✅ ${isPropertyInvestment ? 'Recurring investment' : 'Payment'} schedule creation initiated! Waiting for confirmation...`
       }]);
 
       setPendingScheduleCreation(null);
@@ -634,13 +750,89 @@ export default function Dashboard() {
   };
 
   const executeStreamMoney = async (params: any) => {
+    console.log('💰 executeStreamMoney called with params:', params);
+    
+    // Check if this is an event-driven payment
+    if (params.eventTrigger) {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `🎯 Setting up Event-Driven Payment (IFTTT for Web3)\n\n📋 Trigger: ${params.triggerDescription || 'When payment received'}\n📍 Action: Send to ${params.recipient}\n💰 Amount: Same as received amount\n\n🔄 Step 1: Creating payment schedule with event trigger...` 
+      }]);
+      
+      // Resolve friend name to address if needed
+      let recipient = params.recipient;
+      if (recipient && !recipient.startsWith('0x') && !recipient.includes('.eth')) {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends/${address}/resolve/${recipient}`);
+          if (response.ok) {
+            const data = await response.json();
+            recipient = data.friendAddress;
+            setChatMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `🔍 Resolved "${params.recipient}" to ${recipient}` 
+            }]);
+          }
+        } catch (error) {
+          console.error('Error resolving friend name:', error);
+        }
+      }
+      
+      // Set up event-driven payment using existing agent
+      // For event-driven payments, use a very long interval (1 year) since execution will be triggered by events
+      const defaultAmount = parseEther(params.amount || '100');
+      const interval = 365 * 24 * 60 * 60; // 1 year in seconds (event-driven, not time-based)
+      const maxExecutions = 10; // Allow 10 triggered events (reasonable for event-driven)
+      
+      // Store pending schedule creation for event-driven payment
+      setPendingScheduleCreation({
+        recipient: recipient,
+        amount: defaultAmount,
+        interval: interval,
+        maxExecutions: maxExecutions,
+        isEventDriven: true,
+        eventTrigger: params.eventTrigger,
+        triggerFrom: params.triggerFrom,
+        triggerDescription: params.triggerDescription
+      });
+      
+      try {
+        // First approve USDC spending for event-driven payments
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `🔐 Step 2: Approving USDC spending for event-driven payments...\n💰 Approving 2000 USDC for payments and executor rewards\n🎯 Trigger: ${params.triggerDescription}` 
+        }]);
+
+        await writeContract({
+          address: getAddress(USDC_TOKEN_ADDRESS),
+          abi: USDC_ABI,
+          functionName: 'approve',
+          args: [getAddress(AUTO_RECURRING_PAYMENTS_ADDRESS), parseEther('2000')], // Approve 2000 USDC
+        });
+
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `✅ USDC approval granted! Now setting up permissions...` 
+        }]);
+
+      } catch (error) {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `❌ Failed to grant permissions: ${error}` 
+        }]);
+        setPendingScheduleCreation(null);
+      }
+      
+      return;
+    }
+    
+    // Regular streaming logic continues here...
     // Resolve friend name to address if needed
     let recipient = params.recipient || '0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6';
     
     // Check if recipient is a friend name (not an address)
     if (recipient && !recipient.startsWith('0x') && !recipient.includes('.eth')) {
       try {
-        const response = await fetch(`http://localhost:3001/api/friends/${address}/resolve/${recipient}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends/${address}/resolve/${recipient}`);
         if (response.ok) {
           const data = await response.json();
           recipient = data.friendAddress;
@@ -896,9 +1088,12 @@ export default function Dashboard() {
 
   const executeRentToOwn = async (params: any) => {
     console.log('🏠 executeRentToOwn called with params:', params);
+    console.log('🔍 Wallet connected:', isConnected, 'Address:', address);
+    console.log('🔍 RENT_TO_OWN_ADAPTER_ADDRESS:', RENT_TO_OWN_ADAPTER_ADDRESS);
     
     const propertyId = params.propertyId || '1';
-    const propertyShareAddress = PROPERTY_SHARE_ADDRESSES[propertyId];
+    const propertyShareAddress = getAddress(PROPERTY_SHARE_ADDRESSES[propertyId] || PROPERTY_SHARE_ADDRESSES['1']);
+    console.log('🔍 Property details:', { propertyId, propertyShareAddress });
     const targetOwnershipPercentage = params.targetOwnershipPercentage || 5;
     const targetMonths = params.targetMonths || 12;
     const monthlyRent = parseFloat(params.monthlyRent || '2000');
@@ -915,7 +1110,7 @@ export default function Dashboard() {
     const targetOwnershipBasisPoints = targetOwnershipPercentage * 100;
     
     // Default landlord address (in production, this would be the actual landlord)
-    const landlordAddress = "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6";
+    const landlordAddress = getAddress("0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6");
     
     // Convert monthly rent to wei (18 decimals)
     const monthlyRentWei = parseEther(monthlyRent.toString());
@@ -934,27 +1129,107 @@ export default function Dashboard() {
     try {
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `🏠 Setting up Real-Time Home Ownership!\n\n🎯 Goal: ${targetOwnershipPercentage}% ownership of ${params.propertyName || 'Manhattan Luxury Apartments'}\n💰 Monthly Rent: $${monthlyRent}\n📅 Timeline: ${targetMonths} months\n🏘️ Landlord: ${landlordAddress}\n\n🔐 Creating rent-to-own schedule...` 
+        content: `🏠 Setting up Real-Time Home Ownership!\n\n🎯 Goal: ${targetOwnershipPercentage}% ownership of ${params.propertyName || 'Manhattan Luxury Apartments'}\n💰 Monthly Rent: $${monthlyRent}\n📅 Timeline: ${targetMonths} months\n🏘️ Landlord: ${landlordAddress}\n\n🔐 Creating rent-to-own schedule...\n\n🧪 DEBUG: About to call contract function...` 
       }]);
 
-      // Create rent-to-own schedule
-      await writeContract({
-        address: RENT_TO_OWN_ADAPTER_ADDRESS,
-        abi: RENT_TO_OWN_ADAPTER_ABI,
+      console.log('🚀 About to call writeContract with exact parameters:', {
+        contractAddress: RENT_TO_OWN_ADAPTER_ADDRESS,
         functionName: 'createRentToOwnSchedule',
-        args: [
-          propertyShareAddress,
-          landlordAddress,
-          monthlyRentWei,
-          targetOwnershipBasisPoints,
-          targetMonths
+        parameters: [
+          address, // tenant (current user)
+          landlordAddress, // landlord  
+          propertyShareAddress, // PropertyShare contract
+          monthlyRentWei.toString(), // monthly rent in wei
+          targetOwnershipBasisPoints, // target ownership in basis points
+          targetMonths // target months
         ],
+        abi: 'RENT_TO_OWN_ADAPTER_ABI (length: ' + RENT_TO_OWN_ADAPTER_ABI.length + ')'
       });
 
-      setChatMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `✅ Rent-to-own schedule creation initiated! Waiting for confirmation...` 
-      }]);
+      console.log('🔍 Contract call details:', {
+        isConnected,
+        address,
+        chainId: 'Base Sepolia',
+        contractAddress: RENT_TO_OWN_ADAPTER_ADDRESS,
+        propertyShareAddress,
+        monthlyRentWei: monthlyRentWei.toString(),
+        targetOwnershipBasisPoints
+      });
+
+      // Create rent-to-own schedule
+      console.log('🔥 CALLING writeContract NOW...');
+      console.log('🔍 Wallet details:', {
+        address,
+        isConnected,
+        contractAddress: RENT_TO_OWN_ADAPTER_ADDRESS,
+        propertyShareAddress,
+        monthlyRentWei: monthlyRentWei.toString(),
+        targetOwnershipBasisPoints,
+        targetMonths
+      });
+      
+      console.log('🔍 Individual parameters:');
+      console.log('- address (tenant):', address);
+      console.log('- landlordAddress:', landlordAddress);
+      console.log('- propertyShareAddress:', propertyShareAddress);
+      console.log('- monthlyRentWei:', monthlyRentWei.toString());
+      console.log('- targetOwnershipBasisPoints:', targetOwnershipBasisPoints);
+      console.log('- targetMonths:', targetMonths);
+      
+      // Validate all parameters before calling
+      if (!address) {
+        throw new Error('Wallet not connected');
+      }
+      if (!propertyShareAddress || propertyShareAddress === "0x0000000000000000000000000000000000000000") {
+        throw new Error('Invalid property share address');
+      }
+      if (monthlyRentWei.toString() === '0') {
+        throw new Error('Invalid monthly rent amount');
+      }
+      
+      try {
+        // Use writeContract (doesn't return a promise, but triggers transaction)
+        writeContract({
+          address: getAddress(RENT_TO_OWN_ADAPTER_ADDRESS),
+          abi: RENT_TO_OWN_ADAPTER_ABI,
+          functionName: 'createRentToOwnSchedule',
+          args: [
+            address, // tenant (current user)
+            landlordAddress, // landlord
+            propertyShareAddress, // PropertyShare contract
+            monthlyRentWei, // monthly rent in wei
+            targetOwnershipBasisPoints, // target ownership in basis points
+            targetMonths // target months
+          ],
+        });
+        
+        console.log('✅ writeContract called successfully - waiting for MetaMask...');
+
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `✅ Rent-to-own schedule created! Now setting up recurring payments...\n\n🔄 Step 2: Creating monthly recurring rent payments of ${monthlyRent} USDC` 
+        }]);
+        
+        // After creating the rent-to-own schedule, we need to set up recurring payments
+        // This will be handled in the success useEffect when the transaction confirms
+        
+      } catch (writeError: any) {
+        console.error('❌ writeContract failed:', writeError);
+        
+        // Check if it's a user rejection
+        if (writeError?.message?.includes('User rejected') || writeError?.code === 4001) {
+          setChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `❌ Transaction cancelled by user.` 
+          }]);
+        } else {
+          setChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `❌ Contract call failed: ${writeError?.message || writeError}\n\n🔍 Debug info:\n- Contract: ${RENT_TO_OWN_ADAPTER_ADDRESS}\n- Function: createRentToOwnSchedule\n- Network: Base Sepolia\n\n💡 This might be due to:\n• Contract not deployed on current network\n• Insufficient gas\n• Invalid parameters\n• Network connection issues` 
+          }]);
+        }
+        throw writeError;
+      }
 
     } catch (error) {
       console.error('❌ Error in executeRentToOwn:', error);
@@ -1043,8 +1318,114 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [address]);
 
+  const executeSimpleTransfer = async (params: any) => {
+    console.log('💸 executeSimpleTransfer called with params:', params);
+    
+    let token = params.tokenIn || 'USDC';
+    // Convert USD/dollar aliases to USDC
+    if (token === 'USD' || token === 'DOLLAR' || token === 'DOLLARS') {
+      token = 'USDC';
+    }
+    
+    const recipient = params.recipient || params.friendName; // Handle both parameter names
+    const cleanAmount = (params.amount || '10').toString().replace(/[$,]/g, '');
+    const amount = parseFloat(cleanAmount);
+    
+    console.log('💸 Transfer details:', { token, recipient, amount });
+    
+    // Convert amount to proper units (Your custom USDC has 18 decimals, ETH has 18)
+    let transferAmount;
+    let tokenAddress;
+    let tokenAbi;
+    
+    if (token === 'USDC') {
+      transferAmount = parseEther(amount.toString()); // Your USDC has 18 decimals like ETH
+      tokenAddress = USDC_TOKEN_ADDRESS;
+      tokenAbi = USDC_ABI;
+    } else if (token === 'ETH' || token === 'WETH') {
+      transferAmount = parseEther(amount.toString()); // ETH has 18 decimals
+      tokenAddress = WETH_TOKEN_ADDRESS;
+      tokenAbi = WETH_ABI;
+    } else {
+      throw new Error(`Unsupported token: ${token}`);
+    }
+    
+    try {
+      // Resolve recipient if it's a friend name
+      let resolvedRecipient = recipient;
+      let displayName = recipient;
+      
+      if (recipient && !recipient.startsWith('0x') && !recipient.includes('.eth')) {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `💸 Sending ${amount} ${token} to ${recipient}\n\n🔍 Resolving friend "${recipient}"...` 
+        }]);
+        
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends/${address}/resolve/${recipient}`);
+          if (response.ok) {
+            const data = await response.json();
+            resolvedRecipient = data.friendAddress;
+            displayName = `${recipient} (${resolvedRecipient})`;
+            setChatMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `🔍 Resolved "${recipient}" to ${resolvedRecipient}\n\n🔐 Initiating transfer...` 
+            }]);
+          } else {
+            setChatMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `⚠️ Could not resolve friend "${recipient}". Please add them first or use their address.\n\n❌ Transfer cancelled.` 
+            }]);
+            return;
+          }
+        } catch (error) {
+          console.log('Could not resolve friend name:', recipient);
+          setChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `⚠️ Could not resolve friend "${recipient}". Please add them first or use their address.\n\n❌ Transfer cancelled.` 
+          }]);
+          return;
+        }
+      } else {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `💸 Sending ${amount} ${token} to ${displayName}\n\n🔐 Initiating transfer...` 
+        }]);
+      }
+
+      console.log('💸 Executing transfer:', { tokenAddress, resolvedRecipient, transferAmount });
+
+      // Execute the transfer
+      await writeContract({
+        address: tokenAddress as `0x${string}`,
+        abi: tokenAbi,
+        functionName: 'transfer',
+        args: [resolvedRecipient, transferAmount],
+      });
+
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `✅ Transfer initiated! Sending ${amount} ${token} to ${displayName}` 
+      }]);
+
+    } catch (error) {
+      console.error('Transfer error:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `❌ Transfer failed: ${error}` 
+      }]);
+    }
+  };
+
   const executeSwap = async (params: any) => {
     console.log('🔄 executeSwap called with params:', params);
+    
+    // Check if this is a simple transfer
+    if (params.transferType === 'simple_transfer' || (params.recurrence === 'once' && params.recipient)) {
+      console.log('💸 Routing to executeSimpleTransfer');
+      return await executeSimpleTransfer(params);
+    }
+    
     // Check if this is a recurring property investment
     if (params.investmentType === 'recurring_property_investment') {
       console.log('🎯 Routing to executeRecurringPropertyInvestment');

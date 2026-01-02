@@ -297,14 +297,6 @@ export class PaymentExecutorAgent {
     const existingRule = this.safetyRules.get(scheduleId) || { scheduleId };
     const updatedRule = { ...existingRule, ...rule };
     this.safetyRules.set(scheduleId, updatedRule);
-  /**
-   * Add safety rule for a specific schedule
-   * This is called when user sets gas limits or emergency brakes
-   */
-  addSafetyRule(scheduleId: string, rule: Partial<SafetyRule>) {
-    const existingRule = this.safetyRules.get(scheduleId) || { scheduleId };
-    const updatedRule = { ...existingRule, ...rule };
-    this.safetyRules.set(scheduleId, updatedRule);
     
     console.log(`🛡️ Safety rule added for schedule ${scheduleId.substring(0, 10)}...:`);
     if (rule.maxGasPrice) console.log(`   Max Gas Price: ${rule.maxGasPrice} gwei`);
@@ -677,14 +669,6 @@ export class PaymentExecutorAgent {
       }
     }
   }
-      } catch (error) {
-        console.log(`⚠️ Error getting user schedules:`, (error as Error).message);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error checking due payments:', (error as Error).message);
-    }
-  }
 
   private async executePayment(scheduleId: string) {
     try {
@@ -803,6 +787,178 @@ export class PaymentExecutorAgent {
   }
 
   /**
+   * Handle new block events (for ETH transfers if needed)
+   */
+  private async handleNewBlock(blockNumber: number) {
+    // This could be used for ETH transfer monitoring if needed
+    // For now, we focus on USDC transfers via events
+  }
+
+  /**
+   * Process transfer event - called by server for manual testing
+   */
+  async processTransferEvent(eventData: {
+    from: string;
+    to: string;
+    value: string | ethers.BigNumber;
+    transactionHash?: string;
+    blockNumber?: number;
+  }) {
+    console.log('🔍 Processing transfer event manually:', eventData);
+    
+    // Convert value to string if it's a BigNumber
+    const value = typeof eventData.value === 'string' ? 
+      ethers.BigNumber.from(eventData.value) : 
+      eventData.value;
+    
+    const amount = ethers.utils.formatUnits(value, 18); // USDC has 18 decimals in this setup
+    
+    console.log(`💰 Manual Transfer Event:`);
+    console.log(`   From: ${eventData.from}`);
+    console.log(`   To: ${eventData.to}`);
+    console.log(`   Amount: ${amount} USDC`);
+    console.log(`   Tx: ${eventData.transactionHash || 'manual-test'}`);
+    
+    // Check all event triggers for matches
+    for (const [scheduleId, trigger] of this.eventTriggers) {
+      if (!trigger.isActive || trigger.triggerType !== 'usdc_received') continue;
+      
+      // Check if this transfer matches the trigger conditions
+      const isMatch = await this.checkTransferTrigger(trigger, eventData.from, eventData.to, amount);
+      
+      if (isMatch) {
+        console.log(`🎯 Trigger matched for schedule ${scheduleId.substring(0, 10)}...!`);
+        console.log(`   Trigger: ${trigger.description}`);
+        
+        // Execute the triggered payment using direct USDC transfer
+        await this.executeEventDrivenForward(scheduleId, trigger, {
+          from: eventData.from,
+          to: eventData.to,
+          amount,
+          txHash: eventData.transactionHash || 'manual-test',
+          blockNumber: eventData.blockNumber || 0
+        });
+      }
+    }
+  }
+
+  /**
+   * Execute direct USDC transfer for event-driven payments
+   * This bypasses the scheduled payment system and does immediate transfers
+   */
+  private async executeEventDrivenForward(
+    scheduleId: string,
+    trigger: EventTrigger,
+    eventData: {
+      from: string;
+      to: string;
+      amount: string;
+      txHash: string;
+      blockNumber: number;
+    }
+  ) {
+    try {
+      console.log(`🚀 Executing event-driven forward payment for schedule ${scheduleId.substring(0, 10)}...`);
+      console.log(`   Triggered by: ${eventData.from} → ${eventData.to} (${eventData.amount} USDC)`);
+      console.log(`   Trigger tx: ${eventData.txHash}`);
+      
+      // Get the forward recipient from trigger metadata
+      const forwardRecipient = (trigger as any).forwardTo || trigger.triggerTo;
+      if (!forwardRecipient) {
+        console.error(`❌ No forward recipient found for trigger ${scheduleId}`);
+        return;
+      }
+      
+      console.log(`   Forwarding to: ${forwardRecipient}`);
+      
+      // Perform safety checks before execution
+      const canExecute = await this.performSafetyChecks(scheduleId, eventData.to);
+      
+      if (canExecute.safe) {
+        console.log(`✅ Safety checks passed - executing event-driven forward...`);
+        
+        // Execute direct USDC transfer (same amount received)
+        const transferAmount = ethers.utils.parseUnits(eventData.amount, 18);
+        
+        // Create USDC contract instance for transfer
+        const usdcContract = new ethers.Contract(
+          "0x6B0dacea6a72E759243c99Eaed840DEe9564C194", // USDC address
+          [
+            "function transfer(address to, uint256 amount) returns (bool)",
+            "function balanceOf(address owner) view returns (uint256)"
+          ],
+          this.wallet
+        );
+        
+        // Check balance first
+        const balance = await usdcContract.balanceOf(this.wallet.address);
+        console.log(`💰 Agent wallet balance: ${ethers.utils.formatUnits(balance, 18)} USDC`);
+        
+        if (balance.lt(transferAmount)) {
+          console.log(`❌ Insufficient balance for forward: need ${eventData.amount} USDC, have ${ethers.utils.formatUnits(balance, 18)} USDC`);
+          return;
+        }
+        
+        // Execute the forward transfer
+        console.log(`💸 Forwarding ${eventData.amount} USDC to ${forwardRecipient}...`);
+        
+        const tx = await usdcContract.transfer(forwardRecipient, transferAmount, {
+          gasLimit: 100000 // Conservative gas limit for USDC transfer
+        });
+        
+        console.log('📤 Forward transaction sent:', tx.hash);
+        const receipt = await tx.wait();
+        
+        console.log(`✅ Event-driven forward completed successfully!`);
+        console.log(`🔗 Forward Transaction: https://sepolia.basescan.org/tx/${tx.hash}`);
+        console.log(`💰 Amount: ${eventData.amount} USDC forwarded to ${forwardRecipient}`);
+        console.log(`⚡ Chain reaction: ${eventData.from} → ${eventData.to} → ${forwardRecipient}`);
+        console.log(`🎉 IFTTT for Web3 executed successfully!`);
+        
+        // Update trigger timestamp
+        trigger.lastTriggered = Date.now();
+        this.eventTriggers.set(scheduleId, trigger);
+        
+        // Log execution details
+        const executionLog = {
+          timestamp: new Date().toISOString(),
+          type: 'event_driven_forward',
+          scheduleId,
+          triggerEvent: {
+            from: eventData.from,
+            to: eventData.to,
+            amount: eventData.amount,
+            txHash: eventData.txHash
+          },
+          forwardAction: {
+            from: this.wallet.address,
+            to: forwardRecipient,
+            amount: eventData.amount,
+            txHash: tx.hash,
+            gasUsed: receipt.gasUsed.toString()
+          },
+          triggerDescription: trigger.description,
+          executedBy: this.wallet.address
+        };
+
+        console.log('📊 Event-Driven Payment Execution Log:', JSON.stringify(executionLog, null, 2));
+        
+      } else {
+        console.log(`🛡️ Safety check failed for event-driven forward: ${canExecute.reason}`);
+        
+        if (canExecute.shouldRetry) {
+          console.log(`🔄 Adding event-driven forward to retry queue`);
+          this.retryQueue.add(scheduleId);
+          this.updateRetryAttempt(scheduleId);
+        }
+      }
+      
+    } catch (error) {
+      console.error(`❌ Failed to execute event-driven forward:`, error);
+    }
+  }
+
+  /**
    * Set global gas threshold (applies to schedules without specific rules)
    */
   setGlobalGasThreshold(maxGasGwei: number) {
@@ -822,4 +978,111 @@ export function initializePaymentExecutor(privateKey: string, rpcUrl: string): P
     paymentExecutor = new PaymentExecutorAgent(privateKey, rpcUrl);
   }
   return paymentExecutor;
+}
+
+/**
+ * PaymentExecutorService - Service wrapper for the PaymentExecutorAgent
+ * Provides a clean interface for the server to interact with the payment agent
+ */
+export class PaymentExecutorService {
+  private agent: PaymentExecutorAgent | null = null;
+
+  constructor() {
+    // Initialize the agent with environment variables
+    const privateKey = process.env.PRIVATE_KEY;
+    const rpcUrl = process.env.RPC_URL || 'https://sepolia.base.org';
+    
+    if (privateKey) {
+      this.agent = initializePaymentExecutor(privateKey, rpcUrl);
+      console.log('✅ PaymentExecutorService initialized with agent');
+    } else {
+      console.warn('⚠️ PaymentExecutorService: No private key found, agent not initialized');
+    }
+  }
+
+  /**
+   * Add event trigger for IFTTT functionality
+   */
+  addEventTrigger(scheduleId: string, trigger: any) {
+    if (!this.agent) {
+      console.error('❌ PaymentExecutorService: Agent not initialized');
+      return;
+    }
+    
+    this.agent.addEventTrigger(scheduleId, trigger);
+  }
+
+  /**
+   * Remove event trigger
+   */
+  removeEventTrigger(scheduleId: string) {
+    if (!this.agent) {
+      console.error('❌ PaymentExecutorService: Agent not initialized');
+      return;
+    }
+    
+    this.agent.removeEventTrigger(scheduleId);
+  }
+
+  /**
+   * Process transfer event manually (for testing)
+   */
+  async processTransferEvent(eventData: any) {
+    if (!this.agent) {
+      console.error('❌ PaymentExecutorService: Agent not initialized');
+      return;
+    }
+    
+    return await this.agent.processTransferEvent(eventData);
+  }
+
+  /**
+   * Get event triggers
+   */
+  getEventTriggers() {
+    if (!this.agent) {
+      console.error('❌ PaymentExecutorService: Agent not initialized');
+      return {};
+    }
+    
+    return this.agent.getEventTriggers();
+  }
+
+  /**
+   * Start the payment executor agent
+   */
+  async start() {
+    if (!this.agent) {
+      console.error('❌ PaymentExecutorService: Agent not initialized');
+      return;
+    }
+    
+    return await this.agent.start();
+  }
+
+  /**
+   * Stop the payment executor agent
+   */
+  async stop() {
+    if (!this.agent) {
+      console.error('❌ PaymentExecutorService: Agent not initialized');
+      return;
+    }
+    
+    return await this.agent.stop();
+  }
+
+  /**
+   * Get agent status
+   */
+  getStatus() {
+    if (!this.agent) {
+      return {
+        isRunning: false,
+        error: 'Agent not initialized'
+      };
+    }
+    
+    return this.agent.getStatus();
+  }
 }

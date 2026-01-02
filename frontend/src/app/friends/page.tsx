@@ -60,7 +60,7 @@ export default function FriendsPage() {
     
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/friends/${address}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends/${address}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -97,7 +97,7 @@ export default function FriendsPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/friends', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ export default function FriendsPage() {
     setSuccess('');
 
     try {
-      const response = await fetch(`http://localhost:3001/api/friends/${editingFriend.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends/${editingFriend.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ export default function FriendsPage() {
     if (!confirm('Are you sure you want to delete this friend?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/friends/${friendId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/friends/${friendId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

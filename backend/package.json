@@ -4,7 +4,8 @@
   "description": "Backend service for AI Agent DApp",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server-basic.ts",
+    "dev": "tsx watch src/server.ts",
+    "dev-safe": "tsx watch src/server-memory-safe.ts",
     "dev-full": "tsx watch src/server-simple.ts",
     "dev-engine": "tsx watch src/server-financial-engine.ts",
     "build": "tsc",

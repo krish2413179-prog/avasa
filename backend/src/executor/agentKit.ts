@@ -504,7 +504,7 @@ class PropertyAgent {
   }
 
   async purchaseShares(params: any) {
-    console.log('🏠 PropertyAgent: Executing REAL property share purchase...', params)
+    console.log('🏠 PropertyAgent: Executing REAL USDC-based property share purchase...', params)
     
     try {
       // Get property contract address
@@ -518,54 +518,117 @@ class PropertyAgent {
       console.log(`📄 Contract Address: ${property.address}`);
       console.log(`🏢 Property: ${property.name}`);
       
-      // Create contract instance
-      const contract = new ethers.Contract(property.address, REAL_ESTATE_ABI, this.wallet);
+      // USDC and Swap Pool addresses from deployed constants
+      const USDC_TOKEN_ADDRESS = "0x6B0dacea6a72E759243c99Eaed840DEe9564C194";
+      const SIMPLE_SWAP_POOL_ADDRESS = "0xCe3bf5DEd091c822193F14502B724a1bf1040E5C";
       
-      // Calculate shares to purchase based on investment amount
-      const investmentAmount = parseFloat(params.amount?.replace(/[$,]/g, '') || '0');
-      const pricePerShare = parseFloat(property.pricePerShare); // 0.1 ETH per share
-      const sharesToPurchase = Math.floor(investmentAmount / pricePerShare);
+      // Calculate investment amount in USDC (18 decimals for this USDC token)
+      const investmentAmountUSD = parseFloat(params.amount?.replace(/[$,]/g, '') || '0');
+      const usdcAmount = ethers.utils.parseEther(investmentAmountUSD.toString()); // 18 decimals
       
-      if (sharesToPurchase === 0) {
-        throw new Error(`Investment amount ${investmentAmount} ETH is less than minimum share price ${pricePerShare} ETH`);
+      console.log(`💰 Investing ${investmentAmountUSD} USDC (${ethers.utils.formatEther(usdcAmount)} USDC wei) in ${property.name}`);
+      
+      // Create contract instances
+      const usdcContract = new ethers.Contract(USDC_TOKEN_ADDRESS, [
+        "function transfer(address to, uint256 amount) external returns (bool)",
+        "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
+        "function approve(address spender, uint256 amount) external returns (bool)",
+        "function allowance(address owner, address spender) external view returns (uint256)",
+        "function balanceOf(address account) external view returns (uint256)"
+      ], this.wallet);
+      
+      const swapPoolContract = new ethers.Contract(SIMPLE_SWAP_POOL_ADDRESS, [
+        "function swapUSDCForETH(uint256 _usdcAmount) external",
+        "function getETHAmountForUSDC(uint256 _usdcAmount) external view returns (uint256)"
+      ], this.wallet);
+      
+      const propertyContract = new ethers.Contract(property.address, REAL_ESTATE_ABI, this.wallet);
+      
+      // Check USDC balance
+      const usdcBalance = await usdcContract.balanceOf(this.wallet.address);
+      console.log(`💳 USDC Balance: ${ethers.utils.formatEther(usdcBalance)} USDC`);
+      
+      if (usdcBalance.lt(usdcAmount)) {
+        throw new Error(`Insufficient USDC balance. Need ${ethers.utils.formatEther(usdcAmount)} USDC, have ${ethers.utils.formatEther(usdcBalance)} USDC`);
       }
       
-      const totalCost = ethers.utils.parseEther((sharesToPurchase * pricePerShare).toString());
+      // Step 1: Approve USDC spending by swap pool
+      console.log('🔐 Approving USDC spending by swap pool...');
+      const approveTx = await usdcContract.approve(SIMPLE_SWAP_POOL_ADDRESS, usdcAmount, {
+        gasLimit: 100000
+      });
+      await approveTx.wait();
+      console.log(`✅ USDC approval confirmed: ${approveTx.hash}`);
       
-      console.log(`💰 Purchasing ${sharesToPurchase} shares for ${ethers.utils.formatEther(totalCost)} ETH`);
+      // Step 2: Get ETH amount for USDC
+      const ethAmount = await swapPoolContract.getETHAmountForUSDC(usdcAmount);
+      console.log(`🔄 Will receive ${ethers.utils.formatEther(ethAmount)} ETH for ${ethers.utils.formatEther(usdcAmount)} USDC`);
       
-      // Execute the real blockchain transaction
-      const tx = await contract.purchaseShares(sharesToPurchase, {
-        value: totalCost,
-        gasLimit: 300000 // Set reasonable gas limit
+      // Step 3: Calculate shares to purchase
+      const pricePerShareETH = parseFloat(property.pricePerShare); // 0.1 ETH per share
+      const ethAmountFloat = parseFloat(ethers.utils.formatEther(ethAmount));
+      const sharesToPurchase = Math.floor(ethAmountFloat / pricePerShareETH);
+      
+      if (sharesToPurchase === 0) {
+        throw new Error(`Investment amount ${investmentAmountUSD} USDC (${ethAmountFloat} ETH) is less than minimum share price ${pricePerShareETH} ETH`);
+      }
+      
+      const totalETHCost = ethers.utils.parseEther((sharesToPurchase * pricePerShareETH).toString());
+      
+      console.log(`🏠 Purchasing ${sharesToPurchase} shares for ${ethers.utils.formatEther(totalETHCost)} ETH`);
+      
+      // Step 4: Swap USDC for ETH through the swap pool
+      console.log('🔄 Swapping USDC for ETH...');
+      const swapTx = await swapPoolContract.swapUSDCForETH(usdcAmount, {
+        gasLimit: 200000
+      });
+      await swapTx.wait();
+      console.log(`✅ USDC→ETH swap confirmed: ${swapTx.hash}`);
+      
+      // Step 5: Purchase property shares with ETH
+      console.log('🏠 Purchasing property shares with ETH...');
+      const purchaseTx = await propertyContract.purchaseShares(sharesToPurchase, {
+        value: totalETHCost,
+        gasLimit: 300000
       });
       
-      console.log(`🚀 Transaction submitted: ${tx.hash}`);
+      console.log(`🚀 Property purchase transaction submitted: ${purchaseTx.hash}`);
       console.log('⏳ Waiting for confirmation...');
       
       // Wait for transaction confirmation
-      const receipt = await tx.wait();
+      const receipt = await purchaseTx.wait();
       
-      console.log(`✅ Transaction confirmed in block ${receipt.blockNumber}`);
+      console.log(`✅ Property purchase confirmed in block ${receipt.blockNumber}`);
       console.log(`⛽ Gas used: ${receipt.gasUsed.toString()}`);
+      
+      // Check final USDC balance to confirm deduction
+      const finalUsdcBalance = await usdcContract.balanceOf(this.wallet.address);
+      const usdcSpent = usdcBalance.sub(finalUsdcBalance);
+      console.log(`💸 USDC spent: ${ethers.utils.formatEther(usdcSpent)} USDC`);
       
       return {
         success: true,
-        txHash: tx.hash,
+        txHash: purchaseTx.hash,
+        swapTxHash: swapTx.hash,
+        approveTxHash: approveTx.hash,
         blockNumber: receipt.blockNumber,
         gasUsed: receipt.gasUsed.toString(),
         propertyId: propertyId,
         propertyName: property.name,
         propertyAddress: property.address,
         sharesAcquired: sharesToPurchase,
-        investmentAmount: ethers.utils.formatEther(totalCost),
+        investmentAmount: `${investmentAmountUSD} USDC`,
+        ethReceived: ethers.utils.formatEther(ethAmount),
+        ethCost: ethers.utils.formatEther(totalETHCost),
+        usdcSpent: ethers.utils.formatEther(usdcSpent),
         strategy: params.investmentStrategy,
         realContract: true,
         realTransaction: true,
-        message: `Successfully purchased ${sharesToPurchase} shares of ${property.name} for ${ethers.utils.formatEther(totalCost)} ETH`
+        usdcFlow: true,
+        message: `Successfully purchased ${sharesToPurchase} shares of ${property.name} for ${investmentAmountUSD} USDC (${ethers.utils.formatEther(totalETHCost)} ETH)`
       }
     } catch (error) {
-      console.error('❌ Real property purchase error:', error);
+      console.error('❌ Real USDC-based property purchase error:', error);
       throw error;
     }
   }

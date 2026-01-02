@@ -277,6 +277,14 @@ SCHEDULING INTELLIGENCE:
 - "for 2 minutes" = duration limit to calculate maxExecutions
 - "$1000 worth" = fiatAmount: "$1000"
 
+CRITICAL RECURRING SEND RULES:
+- "send 10 USDC to alice every day" = stream_money (NOT schedule_swap)
+- "send 5 ETH to bob every hour" = stream_money (NOT schedule_swap)  
+- "send 100 DAI to charlie every 30 seconds" = stream_money (NOT schedule_swap)
+- "send 10 usdc to krish every 30 sec for 2 minutes" = stream_money (NOT schedule_swap)
+- NEVER use schedule_swap for "send X token to Y every Z" - ALWAYS use stream_money
+- schedule_swap is ONLY for "swap X for Y" or "buy/sell" commands
+- If you see "send [amount] [token] to [person] every [time]" → MUST return type: "stream_money"
 RECURRING PROPERTY INVESTMENTS:
 - "invest $10 in manhattan every 30 seconds for 2 minutes" = schedule_swap with investmentType: "recurring_property_investment"
   - customInterval: 30 (seconds)
@@ -327,11 +335,13 @@ INTELLIGENT SAFETY COMMANDS:
 - "Only execute when gas is cheap" = schedule_swap with gasOptimization: true
 
 EVENT-DRIVEN COMMANDS (IFTTT for Web3):
-- "Pay my rent when Diya sends me money" = schedule_swap with eventTrigger: usdc_received, triggerFrom: Diya's address
-- "If I receive 1000 USDC from anyone, pay my bills" = schedule_swap with eventTrigger: usdc_received, triggerAmount: 1000
+- "Pay my rent when Diya sends me money" = stream_money with eventTrigger: usdc_received, triggerFrom: Diya's address
+- "If I receive 1000 USDC from anyone, pay my bills" = stream_money with eventTrigger: usdc_received, triggerAmount: 1000
 - "When my salary arrives, automatically invest 20% in Manhattan property" = schedule_swap with eventTrigger: usdc_received, triggerFrom: employer
 - "If someone sends me ETH, convert it to USDC and pay rent" = schedule_swap with eventTrigger: eth_received
-- "When I get paid, trigger all my monthly payments" = schedule_swap with eventTrigger: usdc_received, triggerMultiple: true
+- "If diya paid me money send it to krish" = stream_money with eventTrigger: usdc_received, triggerFrom: diya
+- CRITICAL: Use stream_money for event-driven PAYMENTS to people
+- CRITICAL: Use schedule_swap for event-driven INVESTMENTS or SWAPS
 
 CRITICAL RECURRING INVESTMENT RULES:
 - ANY investment with "every X seconds/minutes/hours" = schedule_swap with investmentType: "recurring_property_investment"
@@ -351,6 +361,26 @@ ADVANCED TRADING FEATURES:
 - "Buy ETH if price drops below $1500" = limit_order with target price
 - "Sell 2 ETH when price hits $4000" = limit_order with sell condition
 - "Follow nancy.base.eth trades with 10% size" = copy_trading with percentage
+
+CRITICAL TOKEN CONVERSION RULES:
+- "dollar", "dollars", "USD", "usd", "$" should ALWAYS become tokenIn: "USDC"
+- "send 10 dollar to krish" = transfer_shares with tokenIn: "USDC"
+- "send 10 USD to alice" = transfer_shares with tokenIn: "USDC"  
+- "send $50 to bob" = transfer_shares with tokenIn: "USDC"
+- NEVER use "USD" as tokenIn - always convert to "USDC"
+
+SIMPLE TRANSFER COMMANDS (CRITICAL - Handle these FIRST):
+- "send 10 usdc to krish" = transfer_shares with action: "transfer", recurrence: "once"
+- "send 10 dollar to krish" = transfer_shares with tokenIn: "USDC" (convert dollar/USD to USDC)
+- "send 10 usd to krish" = transfer_shares with tokenIn: "USDC" (convert dollar/USD to USDC)
+- "send $10 to krish" = transfer_shares with tokenIn: "USDC" (convert dollar/USD to USDC)
+- "transfer 5 eth to alice" = transfer_shares with action: "transfer", recurrence: "once"  
+- "send 100 dai to bob" = transfer_shares with action: "transfer", recurrence: "once"
+- CRITICAL: ANY command with "send [amount] [token] to [person]" = transfer_shares
+- CRITICAL: Simple "send X token to Y" should ALWAYS be transfer_shares, NOT stream_money or schedule_swap
+- CRITICAL: Convert "dollar", "dollars", "USD", "$" to "USDC" token
+- CRITICAL: Only use stream_money for explicit streaming like "stream 5 USDC/day to alice" AND recurring sends like "send 10 USDC to alice every day"
+- CRITICAL: Only use invest_real_estate for explicit property investment like "invest in manhattan property"
 
 STREAM RATE FORMATS:
 - Simple: "5 USDC/day", "1 ETH/week", "100 DAI/month"
@@ -379,9 +409,17 @@ CRITICAL: Simple buy/sell without conditions should be schedule_swap, NOT limit_
 
 Return ONLY valid JSON with this structure (only include relevant parameters):
 {
-  "type": "cancel_schedules|schedule_swap|invest_real_estate|claim_yield|portfolio_rebalance|market_analysis|stream_money|resolve_basename|borrow_against_assets|auto_rebalance|copy_trading|limit_order|yield_farmer|smart_dca|emergency_brake|add_friend",
+  "type": "cancel_schedules|schedule_swap|invest_real_estate|claim_yield|portfolio_rebalance|market_analysis|stream_money|resolve_basename|borrow_against_assets|auto_rebalance|copy_trading|limit_order|yield_farmer|smart_dca|emergency_brake|add_friend|transfer_shares",
   "description": "Human readable description",
   "params": {
+    // For recurring sends (stream_money)
+    "recipient": "address or friend name",
+    "streamRate": "10 USDC/30sec format",
+    "customInterval": "interval in seconds",
+    "maxExecutions": "number of executions",
+    "amount": "amount per payment",
+    "tokenIn": "USDC|ETH|DAI",
+    
     // For recurring property investments (schedule_swap with investmentType)
     "propertyId": "1-10 for property investments",
     "propertyAddress": "property contract address",
@@ -755,6 +793,37 @@ async function enhancedMockRWAParser(input: string, userAddress?: string): Promi
   let triggerAmount: string | undefined;
   let triggerDescription: string | undefined;
   
+  // "If [someone] paid me money" detection
+  if ((lowerInput.includes('if') || lowerInput.includes('when')) && 
+      (lowerInput.includes('paid me') || lowerInput.includes('pays me') || lowerInput.includes('send me money'))) {
+    eventTrigger = 'usdc_received';
+    
+    // Extract sender name: "if diya paid me money", "when boss pays me"
+    const senderMatch = input.match(/(?:if|when)\s+(\w+)\s+(?:paid|pays|sends?)\s+me/i);
+    if (senderMatch) {
+      const senderName = senderMatch[1].toLowerCase();
+      // Try to resolve friend name to address
+      if (userAddress) {
+        try {
+          const response = await fetch(`http://localhost:3001/api/friends/${userAddress}/resolve/${senderName}`);
+          if (response.ok) {
+            const data = await response.json();
+            triggerFrom = data.friendAddress;
+            triggerDescription = `When ${senderName} sends USDC`;
+            console.log('🎯 Event trigger detected:', triggerDescription, 'from', triggerFrom);
+          }
+        } catch (error) {
+          console.log('Could not resolve sender name:', senderName);
+        }
+      }
+      
+      if (!triggerFrom) {
+        triggerDescription = `When ${senderName} sends USDC (address needed)`;
+        console.log('🎯 Event trigger detected:', triggerDescription);
+      }
+    }
+  }
+  
   // "When [someone] sends me money" detection
   if (lowerInput.includes('when') && (lowerInput.includes('sends me') || lowerInput.includes('send me') || lowerInput.includes('receive'))) {
     eventTrigger = 'usdc_received';
@@ -889,6 +958,191 @@ async function enhancedMockRWAParser(input: string, userAddress?: string): Promi
       params: {
         propertyId: lowerInput.includes('all') ? 'all' : propertyId,
         amount: '0'
+      }
+    };
+  }
+
+  // Event-Driven Payment Commands (IFTTT for Web3) - Check this FIRST
+  if (eventTrigger && (lowerInput.includes('send') || lowerInput.includes('pay'))) {
+    // Extract recipient from the action part: "send it to krish", "pay krish"
+    let recipient = '0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6'; // default recipient
+    
+    // Look for "send it to [name]" or "pay [name]"
+    const actionRecipientMatch = input.match(/(?:send.*?to|pay)\s+(\w+)(?:\s|$)/i);
+    if (actionRecipientMatch) {
+      const recipientName = actionRecipientMatch[1];
+      // Try to resolve friend name to address
+      const resolvedAddress = await resolveFriendName(recipientName);
+      if (resolvedAddress) {
+        recipient = resolvedAddress;
+      } else {
+        recipient = recipientName; // Keep the name if not found, frontend can handle
+      }
+    }
+    
+    // Default amount - will be the same amount received from the trigger
+    const amount = triggerAmount || '100'; // Default 100 USDC if no specific amount
+    
+    console.log('🎯 DETECTED EVENT-DRIVEN PAYMENT:', { eventTrigger, triggerFrom, recipient, amount });
+    
+    return {
+      type: 'stream_money',
+      description: `Send money to ${actionRecipientMatch ? actionRecipientMatch[1] : recipient} when ${triggerDescription || 'trigger event occurs'}`,
+      params: {
+        action: 'create',
+        recipient: recipient,
+        amount: amount,
+        tokenIn: 'USDC',
+        eventTrigger: eventTrigger,
+        triggerFrom: triggerFrom,
+        triggerTo: triggerTo,
+        triggerAmount: triggerAmount,
+        triggerDescription: triggerDescription,
+        streamRate: `${amount} USDC/trigger`, // Special format for event-driven
+        superToken: 'fUSDCx'
+      }
+    };
+  }
+
+  // Recurring Send Commands (must come before simple transfer logic)
+  if ((lowerInput.includes('send') || lowerInput.includes('transfer')) && 
+      (lowerInput.includes('usdc') || lowerInput.includes('eth') || lowerInput.includes('dai') || 
+       lowerInput.includes('dollar') || lowerInput.includes('usd')) &&
+      lowerInput.includes('to') &&
+      (lowerInput.includes('every') || lowerInput.includes('recurring'))) {
+    
+    console.log('🎯 DETECTED RECURRING SEND:', input);
+    
+    // Extract recipient (could be basename, address, or friend name)
+    let recipient = '0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6'; // default recipient
+    
+    // Check for basename
+    const basenameMatch = input.match(/(\w+\.base\.eth)/i);
+    if (basenameMatch) {
+      recipient = basenameMatch[1];
+    }
+    
+    // Check for address
+    const addressMatch = input.match(/(0x[a-fA-F0-9]{40})/);
+    if (addressMatch) {
+      recipient = addressMatch[1];
+    }
+    
+    // Check for simple recipient name (like "krish" - could be a friend)
+    const nameMatch = input.match(/to\s+(\w+)(?:\s|$)/i);
+    if (nameMatch && !basenameMatch && !addressMatch) {
+      const friendName = nameMatch[1];
+      // Try to resolve friend name to address
+      const resolvedAddress = await resolveFriendName(friendName);
+      if (resolvedAddress) {
+        recipient = resolvedAddress;
+      } else {
+        recipient = friendName; // Keep the name if not found, frontend can handle
+      }
+    }
+    
+    // Extract amount and token
+    const amountMatch = input.match(/(\d+(?:\.\d+)?)\s*(usdc|eth|dai|weth|usd|dollar|dollars)/i);
+    const amount = amountMatch ? amountMatch[1] : '10';
+    let token = amountMatch ? amountMatch[2].toUpperCase() : 'USDC';
+    
+    // Convert USD/dollar aliases to USDC
+    if (token === 'USD' || token === 'DOLLAR' || token === 'DOLLARS') {
+      token = 'USDC';
+    }
+    
+    // Build stream rate from interval
+    let streamRate = `${amount} ${token}/30sec`; // default
+    if (customInterval && customInterval > 0) {
+      if (customInterval < 60) {
+        streamRate = `${amount} ${token}/${customInterval}sec`;
+      } else if (customInterval < 3600) {
+        streamRate = `${amount} ${token}/${Math.floor(customInterval/60)}min`;
+      } else if (customInterval < 86400) {
+        streamRate = `${amount} ${token}/${Math.floor(customInterval/3600)}hour`;
+      } else {
+        streamRate = `${amount} ${token}/${Math.floor(customInterval/86400)}day`;
+      }
+    }
+    
+    console.log('🎯 RETURNING STREAM_MONEY:', { amount, token, recipient, streamRate, customInterval, maxExecutions });
+    
+    return {
+      type: 'stream_money',
+      description: `Send ${amount} ${token} to ${nameMatch ? nameMatch[1] : recipient} every ${customInterval || 30} seconds${maxExecutions ? ` for ${maxExecutions} times` : ''}`,
+      params: {
+        action: 'create',
+        recipient: recipient,
+        streamRate: streamRate,
+        superToken: token === 'USDC' ? 'fUSDCx' : 'fETHx',
+        customInterval: customInterval,
+        maxExecutions: maxExecutions,
+        amount: amount,
+        tokenIn: token
+      }
+    };
+  }
+
+  // Simple Transfer Commands (must come before streaming logic)
+  if ((lowerInput.includes('send') || lowerInput.includes('transfer')) && 
+      (lowerInput.includes('usdc') || lowerInput.includes('eth') || lowerInput.includes('dai') || 
+       lowerInput.includes('dollar') || lowerInput.includes('usd') || lowerInput.includes('$')) &&
+      lowerInput.includes('to') &&
+      !lowerInput.includes('stream') && !lowerInput.includes('salary') && 
+      !lowerInput.includes('every') && !lowerInput.includes('recurring')) {
+    
+    console.log('🎯 DETECTED SIMPLE TRANSFER:', input);
+    
+    // Extract recipient (could be basename, address, or friend name)
+    let recipient = '0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6'; // default recipient
+    
+    // Check for basename
+    const basenameMatch = input.match(/(\w+\.base\.eth)/i);
+    if (basenameMatch) {
+      recipient = basenameMatch[1];
+    }
+    
+    // Check for address
+    const addressMatch = input.match(/(0x[a-fA-F0-9]{40})/);
+    if (addressMatch) {
+      recipient = addressMatch[1];
+    }
+    
+    // Check for simple recipient name (like "krish" - could be a friend)
+    const nameMatch = input.match(/to\s+(\w+)(?:\s|$)/i);
+    if (nameMatch && !basenameMatch && !addressMatch) {
+      const friendName = nameMatch[1];
+      // Try to resolve friend name to address
+      const resolvedAddress = await resolveFriendName(friendName);
+      if (resolvedAddress) {
+        recipient = resolvedAddress;
+      } else {
+        recipient = friendName; // Keep the name if not found, frontend can handle
+      }
+    }
+    
+    // Extract amount and token
+    const amountMatch = input.match(/(\d+(?:\.\d+)?)\s*(usdc|eth|dai|weth|usd|dollar|dollars)/i);
+    const amount = amountMatch ? amountMatch[1] : '10';
+    let token = amountMatch ? amountMatch[2].toUpperCase() : 'USDC';
+    
+    // Convert USD/dollar aliases to USDC
+    if (token === 'USD' || token === 'DOLLAR' || token === 'DOLLARS') {
+      token = 'USDC';
+    }
+    
+    console.log('🎯 RETURNING TRANSFER_SHARES:', { amount, token, recipient });
+    
+    return {
+      type: 'transfer_shares',
+      description: `Send ${amount} ${token} to ${nameMatch ? nameMatch[1] : recipient}`,
+      params: {
+        action: 'transfer',
+        tokenIn: token,
+        tokenOut: token, // Same token for simple transfer
+        amount: amount,
+        recipient: recipient,
+        recurrence: 'once' // One-time transfer
       }
     };
   }

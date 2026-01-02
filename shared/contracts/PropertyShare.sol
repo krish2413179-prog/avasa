@@ -3,152 +3,62 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title PropertyShare
- * @dev ERC-20 token representing fractional ownership in a property
- * Minted automatically when rent is paid through the RentToOwnAdapter
+ * @dev ERC20 token representing fractional ownership in a property
+ * Only the RentToOwnAdapter can mint new shares when rent is paid
  */
-contract PropertyShare is ERC20, Ownable, ReentrancyGuard {
+contract PropertyShare is ERC20, Ownable {
+    uint256 public constant TOTAL_PROPERTY_VALUE = 1000000 * 10**18; // $1M property in 18 decimals
+    uint256 public constant MAX_SUPPLY = 100 * 10**18; // 100 shares max (1 share = 1% ownership)
     
-    struct PropertyInfo {
-        string name;
-        string location;
-        uint256 totalValue; // Total property value in USDC
-        uint256 totalShares; // Total shares that can be minted (e.g., 100,000 for 0.001% precision)
-        uint256 rentToShareRate; // USDC per share (e.g., 1000 USDC = 1 share)
-        bool isActive;
-    }
+    address public rentToOwnAdapter;
     
-    PropertyInfo public propertyInfo;
-    address public rentAdapter; // Only this contract can mint shares
+    event SharesMinted(address indexed tenant, uint256 rentPaid, uint256 sharesMinted);
     
-    // Track tenant ownership
-    mapping(address => uint256) public tenantShares;
-    mapping(address => uint256) public totalRentPaid;
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
     
-    event SharesEarned(address indexed tenant, uint256 rentPaid, uint256 sharesEarned);
-    event PropertyInfoUpdated(string name, uint256 totalValue, uint256 rentToShareRate);
-    
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        string memory _propertyName,
-        string memory _location,
-        uint256 _totalValue,
-        uint256 _totalShares,
-        uint256 _rentToShareRate
-    ) ERC20(_name, _symbol) {
-        propertyInfo = PropertyInfo({
-            name: _propertyName,
-            location: _location,
-            totalValue: _totalValue,
-            totalShares: _totalShares,
-            rentToShareRate: _rentToShareRate,
-            isActive: true
-        });
+    /**
+     * @dev Set the RentToOwnAdapter contract address (only owner)
+     */
+    function setRentToOwnAdapter(address _adapter) external onlyOwner {
+        rentToOwnAdapter = _adapter;
     }
     
     /**
-     * @dev Set the rent adapter contract (only owner)
+     * @dev Mint shares to tenant based on rent paid
+     * Only callable by RentToOwnAdapter
+     * Exchange Rate: 10,000 USDC rent = 1 share (1% ownership)
      */
-    function setRentAdapter(address _rentAdapter) external onlyOwner {
-        rentAdapter = _rentAdapter;
-    }
-    
-    /**
-     * @dev Reward tenant with shares for rent payment (only rent adapter)
-     */
-    function rewardTenant(address tenant, uint256 rentPaid) external nonReentrant {
-        require(msg.sender == rentAdapter, "Only rent adapter can mint shares");
-        require(propertyInfo.isActive, "Property not active");
+    function rewardTenant(address tenant, uint256 rentPaid) external {
+        require(msg.sender == rentToOwnAdapter, "Only RentToOwnAdapter can mint");
         require(tenant != address(0), "Invalid tenant address");
-        require(rentPaid > 0, "Rent amount must be greater than 0");
         
-        // Calculate shares earned: rentPaid / rentToShareRate
-        uint256 sharesEarned = (rentPaid * 1e18) / propertyInfo.rentToShareRate; // 18 decimals
+        // Calculate shares: 10,000 USDC = 1 share
+        // rentPaid is in 18 decimals, shares are in 18 decimals
+        uint256 shares = (rentPaid * 10**18) / (10000 * 10**18); // Simplified: rentPaid / 10000
         
-        // Ensure we don't exceed total shares
-        require(totalSupply() + sharesEarned <= propertyInfo.totalShares * 1e18, "Would exceed total shares");
+        require(totalSupply() + shares <= MAX_SUPPLY, "Would exceed max supply");
         
-        // Mint shares to tenant
-        _mint(tenant, sharesEarned);
-        
-        // Update tracking
-        tenantShares[tenant] += sharesEarned;
-        totalRentPaid[tenant] += rentPaid;
-        
-        emit SharesEarned(tenant, rentPaid, sharesEarned);
+        if (shares > 0) {
+            _mint(tenant, shares);
+            emit SharesMinted(tenant, rentPaid, shares);
+        }
     }
     
     /**
-     * @dev Get tenant's ownership percentage
+     * @dev Get tenant's ownership percentage (in basis points, 100 = 1%)
      */
     function getOwnershipPercentage(address tenant) external view returns (uint256) {
         if (totalSupply() == 0) return 0;
-        return (balanceOf(tenant) * 10000) / (propertyInfo.totalShares * 1e18); // Basis points (0.01%)
+        return (balanceOf(tenant) * 10000) / (100 * 10**18); // Convert to basis points
     }
     
     /**
-     * @dev Get tenant's equity value in USDC
+     * @dev Get property value represented by tenant's shares
      */
-    function getEquityValue(address tenant) external view returns (uint256) {
-        if (totalSupply() == 0) return 0;
-        uint256 ownershipBasisPoints = (balanceOf(tenant) * 10000) / (propertyInfo.totalShares * 1e18);
-        return (propertyInfo.totalValue * ownershipBasisPoints) / 10000;
-    }
-    
-    /**
-     * @dev Calculate shares needed for target ownership percentage
-     */
-    function calculateSharesForOwnership(uint256 targetPercentageBasisPoints) external view returns (uint256) {
-        // targetPercentageBasisPoints: 500 = 5.00%
-        return (propertyInfo.totalShares * 1e18 * targetPercentageBasisPoints) / 10000;
-    }
-    
-    /**
-     * @dev Calculate USDC needed for target ownership percentage
-     */
-    function calculateUSDCForOwnership(uint256 targetPercentageBasisPoints) external view returns (uint256) {
-        uint256 sharesNeeded = (propertyInfo.totalShares * 1e18 * targetPercentageBasisPoints) / 10000;
-        return (sharesNeeded * propertyInfo.rentToShareRate) / 1e18;
-    }
-    
-    /**
-     * @dev Update property information (only owner)
-     */
-    function updatePropertyInfo(
-        string memory _name,
-        uint256 _totalValue,
-        uint256 _rentToShareRate
-    ) external onlyOwner {
-        propertyInfo.name = _name;
-        propertyInfo.totalValue = _totalValue;
-        propertyInfo.rentToShareRate = _rentToShareRate;
-        
-        emit PropertyInfoUpdated(_name, _totalValue, _rentToShareRate);
-    }
-    
-    /**
-     * @dev Get property information
-     */
-    function getPropertyInfo() external view returns (PropertyInfo memory) {
-        return propertyInfo;
-    }
-    
-    /**
-     * @dev Get tenant statistics
-     */
-    function getTenantStats(address tenant) external view returns (
-        uint256 shares,
-        uint256 totalRent,
-        uint256 ownershipBasisPoints,
-        uint256 equityValue
-    ) {
-        shares = balanceOf(tenant);
-        totalRent = totalRentPaid[tenant];
-        ownershipBasisPoints = totalSupply() > 0 ? (shares * 10000) / (propertyInfo.totalShares * 1e18) : 0;
-        equityValue = totalSupply() > 0 ? (propertyInfo.totalValue * ownershipBasisPoints) / 10000 : 0;
+    function getPropertyValue(address tenant) external view returns (uint256) {
+        return (balanceOf(tenant) * TOTAL_PROPERTY_VALUE) / (100 * 10**18);
     }
 }

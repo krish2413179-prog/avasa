@@ -101,7 +101,7 @@ export function AIChat() {
   const generateResponse = async (userMessage: string): Promise<string> => {
     // Simulate API call to backend
     try {
-      const response = await fetch('http://localhost:3001/api/parse', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/parse`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
